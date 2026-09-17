@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\bin\Debug\net8.0\AtlasGT.Discovery.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\bin\Debug\net8.0\AtlasGT.Discovery.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\bin\Debug\net8.0\AtlasGT.Discovery.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\refint\AtlasGT.Discovery.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\AtlasGT.Discovery.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Discovery\obj\Debug\net8.0\ref\AtlasGT.Discovery.dll

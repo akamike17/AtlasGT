@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\bin\Debug\net8.0\AtlasGT.Infrastructure.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\bin\Debug\net8.0\AtlasGT.Infrastructure.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\bin\Debug\net8.0\AtlasGT.Infrastructure.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\refint\AtlasGT.Infrastructure.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\AtlasGT.Infrastructure.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Infrastructure\obj\Debug\net8.0\ref\AtlasGT.Infrastructure.dll

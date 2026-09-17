@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\bin\Debug\net8.0\AtlasGT.Connectors.Mqtt.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\bin\Debug\net8.0\AtlasGT.Connectors.Mqtt.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\bin\Debug\net8.0\AtlasGT.Connectors.Mqtt.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\refint\AtlasGT.Connectors.Mqtt.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\AtlasGT.Connectors.Mqtt.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Mqtt\obj\Debug\net8.0\ref\AtlasGT.Connectors.Mqtt.dll

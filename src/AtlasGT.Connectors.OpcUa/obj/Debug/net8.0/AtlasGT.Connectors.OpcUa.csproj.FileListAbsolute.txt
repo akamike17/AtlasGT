@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\bin\Debug\net8.0\AtlasGT.Connectors.OpcUa.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\bin\Debug\net8.0\AtlasGT.Connectors.OpcUa.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\bin\Debug\net8.0\AtlasGT.Connectors.OpcUa.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\refint\AtlasGT.Connectors.OpcUa.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\AtlasGT.Connectors.OpcUa.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.OpcUa\obj\Debug\net8.0\ref\AtlasGT.Connectors.OpcUa.dll

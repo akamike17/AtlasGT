@@ -1,0 +1,8 @@
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.RazorAssemblyInfo.cache
+C:\Users\Admin\source\repos\AtlasGT\obj\Debug\net8.0\AtlasGT.RazorAssemblyInfo.cs

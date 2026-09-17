@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AtlasGT.Domain\AtlasGT.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Network\AtlasGT.Connectors.Network.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Simulators\AtlasGT.Connectors.Simulators.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Application\AtlasGT.Application.csproj" />
+  </ItemGroup>
+
+</Project>

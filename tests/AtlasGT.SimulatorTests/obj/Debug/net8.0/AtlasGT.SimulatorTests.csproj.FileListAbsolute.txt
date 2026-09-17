@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\bin\Debug\net8.0\AtlasGT.SimulatorTests.deps.json
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\bin\Debug\net8.0\AtlasGT.SimulatorTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\bin\Debug\net8.0\AtlasGT.SimulatorTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\refint\AtlasGT.SimulatorTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\AtlasGT.SimulatorTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.SimulatorTests\obj\Debug\net8.0\ref\AtlasGT.SimulatorTests.dll

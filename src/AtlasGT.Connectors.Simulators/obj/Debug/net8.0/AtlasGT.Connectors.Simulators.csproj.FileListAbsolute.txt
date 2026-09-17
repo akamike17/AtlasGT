@@ -1,0 +1,15 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\bin\Debug\net8.0\AtlasGT.Connectors.Simulators.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\bin\Debug\net8.0\AtlasGT.Connectors.Simulators.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\bin\Debug\net8.0\AtlasGT.Connectors.Simulators.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\refint\AtlasGT.Connectors.Simulators.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\ref\AtlasGT.Connectors.Simulators.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\bin\Debug\net8.0\AtlasGT.Domain.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\bin\Debug\net8.0\AtlasGT.Domain.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT.Connectors.Simulators.csproj.AssemblyReference.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Simulators\obj\Debug\net8.0\AtlasGT..0E91E8A1.Up2Date

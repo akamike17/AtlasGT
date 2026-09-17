@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\bin\Debug\net8.0\AtlasGT.ProtocolInference.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\bin\Debug\net8.0\AtlasGT.ProtocolInference.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\bin\Debug\net8.0\AtlasGT.ProtocolInference.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\refint\AtlasGT.ProtocolInference.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\AtlasGT.ProtocolInference.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.ProtocolInference\obj\Debug\net8.0\ref\AtlasGT.ProtocolInference.dll

@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\bin\Debug\net8.0\AtlasGT.Normalization.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\bin\Debug\net8.0\AtlasGT.Normalization.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\bin\Debug\net8.0\AtlasGT.Normalization.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\refint\AtlasGT.Normalization.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\AtlasGT.Normalization.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Normalization\obj\Debug\net8.0\ref\AtlasGT.Normalization.dll

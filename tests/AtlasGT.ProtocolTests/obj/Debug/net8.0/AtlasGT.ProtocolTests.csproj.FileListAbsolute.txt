@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\bin\Debug\net8.0\AtlasGT.ProtocolTests.deps.json
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\bin\Debug\net8.0\AtlasGT.ProtocolTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\bin\Debug\net8.0\AtlasGT.ProtocolTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\refint\AtlasGT.ProtocolTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\AtlasGT.ProtocolTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.ProtocolTests\obj\Debug\net8.0\ref\AtlasGT.ProtocolTests.dll

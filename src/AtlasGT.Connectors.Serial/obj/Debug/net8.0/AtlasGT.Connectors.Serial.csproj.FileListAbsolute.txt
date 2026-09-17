@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\bin\Debug\net8.0\AtlasGT.Connectors.Serial.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\bin\Debug\net8.0\AtlasGT.Connectors.Serial.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\bin\Debug\net8.0\AtlasGT.Connectors.Serial.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\refint\AtlasGT.Connectors.Serial.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\AtlasGT.Connectors.Serial.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Serial\obj\Debug\net8.0\ref\AtlasGT.Connectors.Serial.dll

@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\bin\Debug\net8.0\AtlasGT.Connectors.Abstractions.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\bin\Debug\net8.0\AtlasGT.Connectors.Abstractions.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\bin\Debug\net8.0\AtlasGT.Connectors.Abstractions.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\refint\AtlasGT.Connectors.Abstractions.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\AtlasGT.Connectors.Abstractions.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Connectors.Abstractions\obj\Debug\net8.0\ref\AtlasGT.Connectors.Abstractions.dll

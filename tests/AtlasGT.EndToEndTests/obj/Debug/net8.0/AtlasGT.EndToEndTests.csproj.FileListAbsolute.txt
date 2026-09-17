@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\bin\Debug\net8.0\AtlasGT.EndToEndTests.deps.json
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\bin\Debug\net8.0\AtlasGT.EndToEndTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\bin\Debug\net8.0\AtlasGT.EndToEndTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\refint\AtlasGT.EndToEndTests.dll
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\AtlasGT.EndToEndTests.pdb
+C:\Users\Admin\source\repos\AtlasGT\tests\AtlasGT.EndToEndTests\obj\Debug\net8.0\ref\AtlasGT.EndToEndTests.dll

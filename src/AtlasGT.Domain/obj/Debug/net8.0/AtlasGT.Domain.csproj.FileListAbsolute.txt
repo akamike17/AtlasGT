@@ -1,0 +1,11 @@
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\bin\Debug\net8.0\AtlasGT.Domain.deps.json
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\bin\Debug\net8.0\AtlasGT.Domain.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\bin\Debug\net8.0\AtlasGT.Domain.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.AssemblyInfoInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.AssemblyInfo.cs
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.csproj.CoreCompileInputs.cache
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\refint\AtlasGT.Domain.dll
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\AtlasGT.Domain.pdb
+C:\Users\Admin\source\repos\AtlasGT\src\AtlasGT.Domain\obj\Debug\net8.0\ref\AtlasGT.Domain.dll
