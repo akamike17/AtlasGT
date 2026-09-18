@@ -17,12 +17,23 @@ namespace AtlasGT.Api.Controllers
         private readonly IBackupService _backup;
         private readonly ConfigStore _config;
         private readonly IAuditLog _audit;
+        private readonly string _auditFilePath;
 
-        public AdminController(IBackupService backup, ConfigStore config, IAuditLog audit)
+        public AdminController(IBackupService backup, ConfigStore config, IAuditLog audit, Microsoft.Extensions.Configuration.IConfiguration cfg)
         {
             _backup = backup;
             _config = config;
             _audit = audit;
+            var root = cfg["AtlasGT:DataRoot"] ?? Path.Combine(AppContext.BaseDirectory, "data");
+            _auditFilePath = Path.Combine(root, "audit", "audit.log");
+        }
+
+        /// <summary>Consulta el audit log (solo admin, por RoleGateMiddleware).</summary>
+        [HttpGet("audit")]
+        public async Task<IActionResult> GetAudit([FromQuery] int max = 100, CancellationToken ct = default)
+        {
+            var entries = await AuditLogReader.ReadLatestAsync(_auditFilePath, Math.Clamp(max, 1, 1000), ct);
+            return Ok(new { count = entries.Count, entries });
         }
 
         [HttpPost("backup")]

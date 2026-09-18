@@ -260,5 +260,41 @@ namespace AtlasGT.EndToEndTests
                 new { host = "127.0.0.1", authorizationToken = "" });
             Assert.AreEqual(HttpStatusCode.BadRequest, r.StatusCode);
         }
+
+        [TestMethod]
+        public async Task Admin_audit_lista_acciones_previas()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+            using var client = AdminClient(factory);
+
+            // Generar accion auditable
+            var b = await client.PostAsync("/api/admin/backup", null);
+            b.EnsureSuccessStatusCode();
+            // Esperar flush del audit log
+            await Task.Delay(200);
+
+            var audit = await client.GetFromJsonAsync<JsonElement>("/api/admin/audit?max=10");
+            var cnt = audit.GetProperty("count").GetInt32();
+            if (cnt == 0)
+            {
+                var dbg = await client.GetStringAsync("/api/admin/audit?max=100");
+                Assert.Fail($"audit vacio. Respuesta: {dbg}");
+            }
+            Assert.IsTrue(cnt >= 1, $"audit count={cnt}");
+            var entries = audit.GetProperty("entries").EnumerateArray().ToList();
+            Assert.IsTrue(entries.Any(e => e.GetProperty("action").GetString() == "backup.create"),
+                "acciones presentes: " + string.Join(",", entries.Select(e => e.GetProperty("action").GetString())));
+        }
+
+        [TestMethod]
+        public async Task Admin_audit_requiere_rol_admin()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+            using var viewer = factory.CreateClient(); // sin rol
+            var r = await viewer.GetAsync("/api/admin/audit");
+            Assert.AreEqual(HttpStatusCode.Forbidden, r.StatusCode);
+        }
     }
 }

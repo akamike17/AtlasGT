@@ -53,8 +53,10 @@
   <div class="row">
     <button id="backupBtn">Crear backup ahora</button>
     <button id="listBackupsBtn" class="secondary">Listar backups</button>
+    <button id="auditBtn" class="secondary">Ver auditoria</button>
   </div>
   <div id="backupsList" class="muted">—</div>
+  <div id="auditList" class="muted">—</div>
 </section>
 
 <section class="card">
@@ -205,6 +207,16 @@
     } catch (e) { alert('backup: ' + e.message); }
   };
   $('#listBackupsBtn').onclick = loadBackups;
+  $('#auditBtn').onclick = loadAudit;
+  async function loadAudit() {
+    try {
+      const r = await call('/api/admin/audit?max=50', { headers: H });
+      $('#auditList').innerHTML = r.entries.length
+        ? '<ul>' + r.entries.map(e =>
+            `<li><strong>${esc(e.action)}</strong> · ${esc(e.actor)} · ${e.atUtc} ${e.succeeded ? '✓' : '✗'} ${e.targetId ? esc(e.targetId) : ''}</li>`).join('') + '</ul>'
+        : 'Sin entradas de auditoria.';
+    } catch (e) { $('#auditList').textContent = 'error: ' + e.message; }
+  }
   async function loadBackups() {
     try {
       const rows = await call('/api/admin/backups', { headers: H });
