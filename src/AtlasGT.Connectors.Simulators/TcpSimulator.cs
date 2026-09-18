@@ -13,8 +13,7 @@ namespace AtlasGT.Connectors.Simulators
     public class TcpSimulator : IDisposable
     {
         private readonly int _port;
-        private TcpListener _listener;
-        private bool _isRunning;
+        private TcpListener? _listener;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
         public TcpSimulator(int port)
@@ -26,26 +25,23 @@ namespace AtlasGT.Connectors.Simulators
         {
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
-            _isRunning = true;
             _ = Task.Run(() => ListenLoop(_cts.Token));
         }
 
         private async Task ListenLoop(CancellationToken token)
         {
+            if (_listener is null) return;
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                    var client = await _listener.AcceptTcpClientAsync(token).ConfigureAwait(false);
                     _ = Task.Run(() => HandleClientAsync(client, token));
                 }
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                // Log or handle exception
-                Console.WriteLine($"Listener error: {ex.Message}");
-            }
+            catch (SocketException) { } // listener parado
+            catch (ObjectDisposedException) { } // listener dispuesto
         }
 
         private async Task HandleClientAsync(TcpClient client, CancellationToken token)
@@ -64,22 +60,20 @@ namespace AtlasGT.Connectors.Simulators
                     await Task.Delay(1000, token).ConfigureAwait(false); // send every second
                 }
             }
-            catch (Exception ex)
-            {
-                // Client disconnected or error
-                Console.WriteLine($"Client handler error: {ex.Message}");
-            }
+            catch (OperationCanceledException) { /* cierre */ }
+            catch (System.IO.IOException) { /* cliente desconectado */ }
+            catch (SocketException) { /* cliente desconectado */ }
+            catch (ObjectDisposedException) { /* stream cerrado */ }
             finally
             {
-                client.Close();
+                try { client.Close(); } catch (ObjectDisposedException) { /* ya cerrado */ } catch (SocketException) { /* ya cerrado */ }
             }
         }
 
         public void Stop()
         {
             _cts.Cancel();
-            _listener?.Stop();
-            _isRunning = false;
+            try { _listener?.Stop(); } catch (ObjectDisposedException) { /* ya parado */ } catch (SocketException) { /* ya parado */ }
         }
 
         public void Dispose()

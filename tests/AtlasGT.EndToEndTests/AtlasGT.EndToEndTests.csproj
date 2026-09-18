@@ -4,6 +4,24 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestAdapter" Version="3.2.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.2.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AtlasGT.Domain\AtlasGT.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Abstractions\AtlasGT.Connectors.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Network\AtlasGT.Connectors.Network.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Simulators\AtlasGT.Connectors.Simulators.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Application\AtlasGT.Application.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Historian\AtlasGT.Historian.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Normalization\AtlasGT.Normalization.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Security\AtlasGT.Security.csproj" />
+  </ItemGroup>
 
 </Project>

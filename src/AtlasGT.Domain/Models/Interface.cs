@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AtlasGT.Domain.Models
 {
@@ -9,5 +10,13 @@ namespace AtlasGT.Domain.Models
         public string Description { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>FK a <see cref="Device"/>.</summary>
+        public Guid? DeviceId { get; set; }
+
+        /// <summary>Tipo fisico/logico: "tcp", "udp", "serial", "can", etc.</summary>
+        public string Kind { get; set; } = string.Empty;
+
+        public List<Endpoint> Endpoints { get; set; } = new();
     }
 }

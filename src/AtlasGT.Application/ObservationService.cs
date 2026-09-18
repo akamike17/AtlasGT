@@ -1,78 +1,90 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AtlasGT.Connectors.Network;
+using AtlasGT.Connectors.Abstractions;
 using AtlasGT.Domain.Models;
+using AtlasGT.Historian;
+using AtlasGT.Normalization;
+using AtlasGT.Security;
 
 namespace AtlasGT.Application
 {
     /// <summary>
-    /// Service that uses a TcpConnector to receive data and produce observations.
+    /// Orquesta un conector pasivo: lee RawSamples, los normaliza a Observations,
+    /// las persiste en el Historian y promueve el endpoint a Observed.
     /// </summary>
-    public class ObservationService : IDisposable
+    public sealed class ObservationService : IAsyncDisposable
     {
-        private readonly TcpConnector _connector;
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private Task _readingTask;
+        private readonly IConnector _connector;
+        private readonly IObservationNormalizer _normalizer;
+        private readonly IObservationHistorian _historian;
+        private readonly ITrustLadder _ladder;
+        private readonly Endpoint _endpoint;
 
-        public ObservationService(string host, int port)
+        private CancellationTokenSource? _cts;
+        private Task? _loop;
+        private int _observationCount;
+
+        public event EventHandler<Observation>? OnObservation;
+
+        public ObservationService(
+            IConnector connector,
+            IObservationNormalizer normalizer,
+            IObservationHistorian historian,
+            ITrustLadder ladder,
+            Endpoint endpoint)
         {
-            _connector = new TcpConnector(host, port);
+            _connector = connector ?? throw new ArgumentNullException(nameof(connector));
+            _normalizer = normalizer ?? throw new ArgumentNullException(nameof(normalizer));
+            _historian = historian ?? throw new ArgumentNullException(nameof(historian));
+            _ladder = ladder ?? throw new ArgumentNullException(nameof(ladder));
+            _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
         }
 
-        public bool Start()
-        {
-            if (!_connector.Connect())
-                return false;
+        public int ObservationCount => _observationCount;
 
-            _readingTask = Task.Run(() => ReadLoop(_cts.Token));
+        public async Task<bool> StartAsync(CancellationToken cancellationToken = default)
+        {
+            if (_cts is not null) return true; // ya iniciado
+            var connected = await _connector.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            if (!connected) return false;
+
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _loop = Task.Run(() => ReadLoopAsync(_cts.Token), CancellationToken.None);
             return true;
         }
 
-        private async Task ReadLoop(CancellationToken token)
+        public async Task StopAsync()
+        {
+            if (_cts is null) return;
+            _cts.Cancel();
+            try { if (_loop is not null) await _loop.ConfigureAwait(false); }
+            catch (OperationCanceledException) { /* esperado */ }
+            await _connector.DisconnectAsync().ConfigureAwait(false);
+            _cts.Dispose();
+            _cts = null;
+            _loop = null;
+        }
+
+        private async Task ReadLoopAsync(CancellationToken token)
         {
             try
             {
-                while (!token.IsCancellationRequested)
+                await foreach (var sample in _connector.ReadAllAsync(token).ConfigureAwait(false))
                 {
-                    double? temperature = _connector.ReadTemperature(token);
-                    if (temperature.HasValue)
-                    {
-                        // Create an observation
-                        var observation = new Observation
-                        {
-                            Name = "Temperature",
-                            Description = $"Temperature reading",
-                            Value = temperature.Value,
-                            Unit = "°C",
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                        Console.WriteLine($"Observation: {observation.Name} = {observation.Value}{observation.Unit} at {observation.CreatedAt}");
-                    }
-                    await Task.Delay(500, token).ConfigureAwait(false);
+                    _ladder.MarkObserved(_endpoint);
+                    var obs = _normalizer.Normalize(sample, _endpoint.Id);
+                    Interlocked.Increment(ref _observationCount);
+                    await _historian.AppendAsync(obs, token).ConfigureAwait(false);
+                    OnObservation?.Invoke(this, obs);
                 }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in observation service: {ex.Message}");
-            }
-            finally
-            {
-                _connector.Disconnect();
-            }
+            catch (OperationCanceledException) { /* normal */ }
         }
 
-        public void Stop()
+        public async ValueTask DisposeAsync()
         {
-            _cts.Cancel();
-        }
-
-        public void Dispose()
-        {
-            Stop();
-            _connector.Dispose();
+            await StopAsync().ConfigureAwait(false);
         }
     }
 }

@@ -6,4 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AtlasGT.Domain\AtlasGT.Domain.csproj" />
+  </ItemGroup>
 </Project>

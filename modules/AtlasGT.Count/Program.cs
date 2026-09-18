@@ -1,111 +1,106 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AtlasGT.Application;
 using AtlasGT.Connectors.Network;
 using AtlasGT.Connectors.Simulators;
+using AtlasGT.Domain.Models;
+using AtlasGT.Historian;
+using AtlasGT.Normalization;
+using AtlasGT.Security;
 
 namespace AtlasGT.Count
 {
-    class Program
+    /// <summary>
+    /// Demo end-to-end: levanta 3 simuladores TCP y les conecta
+    /// servicios de observacion con persistencia a disco.
+    /// </summary>
+    public static class Program
     {
-        static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine("AtlasGT.Count - Starting end-to-end demo with 3 simulated machines.");
+            Console.WriteLine("AtlasGT.Count - demo end-to-end: 3 maquinas simuladas -> observations -> JSONL.");
 
-            // We'll simulate three machines, each as a TCP simulator on a different port.
+            var dataDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "count-demo");
+            Directory.CreateDirectory(dataDir);
+
+            var historian = new FileObservationHistorian(dataDir);
+            var normalizer = new ObservationNormalizer();
+            var ladder = new TrustLadder();
+            var factory = new TcpConnectorFactory();
+
             var simulators = new List<TcpSimulator>();
-            var connectors = new List<TcpConnector>();
-            var observationServices = new List<ObservationService>();
+            var services = new List<ObservationService>();
+            var endpoints = new List<Endpoint>();
             var cts = new CancellationTokenSource();
+
+            Console.CancelKeyPress += (_, e) =>
+            {
+                e.Cancel = true;
+                cts.Cancel();
+            };
 
             try
             {
-                // Start three simulators
+                // 1) Levantar simuladores
                 for (int i = 0; i < 3; i++)
                 {
-                    int port = 5000 + i;
+                    var port = 5000 + i;
                     var sim = new TcpSimulator(port);
                     sim.Start();
                     simulators.Add(sim);
-                    Console.WriteLine($"Started TCP simulator on port {port}");
+                    Console.WriteLine($"[sim] simulador TCP escuchando en {port}");
                 }
 
-                // Give simulators a moment to start
-                await Task.Delay(500);
-
-                // For each simulator, create a connector and an observation service
+                // 2) Construir endpoints y servicios
                 for (int i = 0; i < 3; i++)
                 {
-                    int port = 5000 + i;
-                    var connector = new TcpConnector("127.0.0.1", port);
-                    if (connector.Connect())
+                    var address = $"tcp://127.0.0.1:{5000 + i}";
+                    var endpoint = new Endpoint
                     {
-                        connectors.Add(connector);
-                        var obsService = new ObservationService("127.0.0.1", port);
-                        if (obsService.Start())
-                        {
-                            observationServices.Add(obsService);
-                            Console.WriteLine($"Connected and started observation service for machine {i+1} on port {port}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Failed to start observation service for machine {i+1}");
-                            connector.Disconnect();
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Failed to connect to simulator on port {port}");
-                    }
+                        Id = Guid.NewGuid(),
+                        Name = address,
+                        Address = address,
+                        TrustTier = TrustTier.Passive
+                    };
+                    endpoints.Add(endpoint);
+
+                    var connector = factory.Create(address);
+                    var svc = new ObservationService(connector, normalizer, historian, ladder, endpoint);
+                    svc.OnObservation += (_, obs) =>
+                        Console.WriteLine($"[obs] {endpoint.Address} {obs.Name}={obs.Value}{obs.Unit} tier={endpoint.TrustTier}");
+                    services.Add(svc);
                 }
 
-                // Let it run for 10 seconds
-                Console.WriteLine("Running for 10 seconds...");
-                await Task.Delay(10000, cts.Token);
+                // 3) Start
+                foreach (var svc in services)
+                    await svc.StartAsync(cts.Token);
 
-                // Stop all observation services
-                foreach (var obsService in observationServices)
-                {
-                    obsService.Stop();
-                }
-                // Stop all simulators
-                foreach (var sim in simulators)
-                {
-                    sim.Stop();
-                }
-                // Dispose connectors
-                foreach (var connector in connectors)
-                {
-                    connector.Dispose();
-                }
+                Console.WriteLine("Corriendo 5 segundos. Ctrl-C para salir antes.");
+                try { await Task.Delay(TimeSpan.FromSeconds(5), cts.Token); }
+                catch (OperationCanceledException) { }
 
-                Console.WriteLine("Demo completed successfully.");
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("Demo was cancelled.");
+                // 4) Stop
+                foreach (var svc in services) await svc.StopAsync();
+                foreach (var sim in simulators) sim.Stop();
+
+                // 5) Resumen
+                var total = services.Sum(s => s.ObservationCount);
+                Console.WriteLine($"Total de observaciones persistidas: {total}");
+                Console.WriteLine($"TrustTier final por endpoint:");
+                foreach (var ep in endpoints)
+                    Console.WriteLine($"  {ep.Address} -> {ep.TrustTier}");
+                Console.WriteLine($"Datos guardados en: {Path.GetFullPath(dataDir)}");
+
+                return 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in demo: {ex.Message}");
-            }
-            finally
-            {
-                // Ensure cleanup
-                foreach (var obsService in observationServices)
-                {
-                    obsService.Dispose();
-                }
-                foreach (var sim in simulators)
-                {
-                    sim.Dispose();
-                }
-                foreach (var connector in connectors)
-                {
-                    connector.Dispose();
-                }
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                return 2;
             }
         }
     }
