@@ -296,5 +296,114 @@ namespace AtlasGT.EndToEndTests
             var r = await viewer.GetAsync("/api/admin/audit");
             Assert.AreEqual(HttpStatusCode.Forbidden, r.StatusCode);
         }
+        [TestMethod]
+        public async Task Denegacion_se_audita_en_signed_log()
+        {
+            var (factory, dataRoot) = CreateFactory();
+            using var _f = factory;
+
+            // Viewer intenta escribir → 403 auditado
+            using var viewer = factory.CreateClient();
+            var r = await viewer.PostAsJsonAsync("/api/assets", new { name = "ilegal" });
+            Assert.AreEqual(HttpStatusCode.Forbidden, r.StatusCode);
+
+            await Task.Delay(150); // dejar al middleware flushear
+
+            using var admin = AdminClient(factory);
+            var audit = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit?action=http.request.denied");
+            Assert.IsTrue(audit.GetProperty("count").GetInt32() >= 1,
+                "la denegacion debio quedar registrada");
+        }
+
+        [TestMethod]
+        public async Task Audit_verify_detecta_tampering_manual()
+        {
+            var (factory, dataRoot) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            // Generar algo de actividad
+            var bk = await admin.PostAsync("/api/admin/backup", null);
+            bk.EnsureSuccessStatusCode();
+
+            // Verificar integridad base
+            var okVerify = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit/verify");
+            Assert.IsTrue(okVerify.GetProperty("valid").GetBoolean(), "cadena debe ser valida antes del tamper");
+
+            // Atacante altera el archivo directamente
+            var logPath = Path.Combine(dataRoot, "audit", "audit-signed.log");
+            Assert.IsTrue(File.Exists(logPath), "log debe existir");
+            var content = await File.ReadAllTextAsync(logPath);
+            // Cambiar un caracter cualquiera
+            var idx = content.IndexOf("backup.create", StringComparison.Ordinal);
+            Assert.IsTrue(idx > 0, "no encontre backup.create en el log");
+            var tampered = content.Substring(0, idx) + "respaldo.crear" + content.Substring(idx + "backup.create".Length);
+            await File.WriteAllTextAsync(logPath, tampered);
+
+            // Verificar denuncia tamper
+            var badVerify = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit/verify");
+            Assert.IsFalse(badVerify.GetProperty("valid").GetBoolean(), "tamper debio ser detectado");
+            Assert.IsTrue(badVerify.TryGetProperty("firstTamperedEntryId", out _),
+                "se debe reportar el id de la entrada dañada");
+        }
+
+        [TestMethod]
+        public async Task Audit_filtra_por_severidad()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            // backup → Critical
+            await admin.PostAsync("/api/admin/backup", null);
+            // viewer 403 → Warning
+            using var viewer = factory.CreateClient();
+            await viewer.PostAsJsonAsync("/api/assets", new { name = "ilegal" });
+            await Task.Delay(150);
+
+            var critical = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit?severity=critical");
+            var warning = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit?severity=warning");
+            Assert.IsTrue(critical.GetProperty("count").GetInt32() >= 1);
+            Assert.IsTrue(warning.GetProperty("count").GetInt32() >= 1);
+            // Y las acciones difieren
+            var critActions = critical.GetProperty("entries").EnumerateArray()
+                .Select(e => e.GetProperty("action").GetString()).ToHashSet();
+            var warnActions = warning.GetProperty("entries").EnumerateArray()
+                .Select(e => e.GetProperty("action").GetString()).ToHashSet();
+            Assert.IsTrue(critActions.Contains("backup.create"));
+            Assert.IsTrue(warnActions.Contains("http.request.denied"));
+        }
+
+        [TestMethod]
+        public async Task Correlator_rafaga_denegaciones_dispara_alarma()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+
+            using var viewer = factory.CreateClient();
+            // 12 denegaciones rapidas desde el mismo "cliente" (IP sera null en TestServer,
+            // pero comparten ip="unknown" entonces se acumulan igual).
+            for (int i = 0; i < 12; i++)
+            {
+                var r = await viewer.PostAsJsonAsync("/api/assets", new { name = $"ilegal-{i}" });
+                Assert.AreEqual(HttpStatusCode.Forbidden, r.StatusCode);
+            }
+            await Task.Delay(300); // darle al middleware tiempo de procesar la correlacion
+
+            using var admin = AdminClient(factory);
+            var alarmsResp = await admin.GetAsync("/api/alarms/active");
+            alarmsResp.EnsureSuccessStatusCode();
+            var alarms = await alarmsResp.Content.ReadFromJsonAsync<JsonElement>();
+            var alarmList = alarms.EnumerateArray().ToList();
+            Assert.IsTrue(alarmList.Count >= 1,
+                $"se esperaba alarma por rafaga de denegaciones; activas={alarmList.Count}");
+            var hasRate = alarmList.Any(a =>
+            {
+                var name = a.GetProperty("ruleName").GetString() ?? "";
+                var key = a.GetProperty("signalKey").GetString() ?? "";
+                return name.Contains("Denegaciones") || key.StartsWith("http.denied.rate");
+            });
+            Assert.IsTrue(hasRate, "ninguna alarma menciona la rafaga de denegaciones");
+        }
     }
 }

@@ -37,6 +37,11 @@ builder.Services.AddSingleton<IAuditLog>(sp =>
     var root = ResolveDataRoot(sp.GetRequiredService<IConfiguration>());
     return new FileAuditLog(Path.Combine(root, "audit"));
 });
+builder.Services.AddSingleton<ISignedAuditLog>(sp =>
+{
+    var root = ResolveDataRoot(sp.GetRequiredService<IConfiguration>());
+    return new SignedFileAuditLog(Path.Combine(root, "audit"));
+});
 builder.Services.AddSingleton<IDoctorService, DoctorService>();
 builder.Services.AddSingleton<AlarmEngine>();
 builder.Services.AddSingleton<ObservationStreamer>();

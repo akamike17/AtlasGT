@@ -9,31 +9,54 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AtlasGT.Api.Controllers
 {
-    /// <summary>Endpoints de administracion: backup, restore, lista de backups, auditoria.</summary>
+    /// <summary>Endpoints de administracion: backup, restore, lista de backups, auditoria firmada.</summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AdminController : ControllerBase
     {
         private readonly IBackupService _backup;
         private readonly ConfigStore _config;
-        private readonly IAuditLog _audit;
-        private readonly string _auditFilePath;
+        private readonly ISignedAuditLog _audit;
 
-        public AdminController(IBackupService backup, ConfigStore config, IAuditLog audit, Microsoft.Extensions.Configuration.IConfiguration cfg)
+        public AdminController(IBackupService backup, ConfigStore config, ISignedAuditLog audit)
         {
             _backup = backup;
             _config = config;
             _audit = audit;
-            var root = cfg["AtlasGT:DataRoot"] ?? Path.Combine(AppContext.BaseDirectory, "data");
-            _auditFilePath = Path.Combine(root, "audit", "audit.log");
         }
 
-        /// <summary>Consulta el audit log (solo admin, por RoleGateMiddleware).</summary>
+        /// <summary>Consulta audit log con filtros.</summary>
         [HttpGet("audit")]
-        public async Task<IActionResult> GetAudit([FromQuery] int max = 100, CancellationToken ct = default)
+        public async Task<IActionResult> GetAudit(
+            [FromQuery] DateTimeOffset? from = null,
+            [FromQuery] DateTimeOffset? to = null,
+            [FromQuery] string? actor = null,
+            [FromQuery] string? action = null,
+            [FromQuery] string? severity = null,
+            [FromQuery] int max = 100,
+            CancellationToken ct = default)
         {
-            var entries = await AuditLogReader.ReadLatestAsync(_auditFilePath, Math.Clamp(max, 1, 1000), ct);
+            AuditSeverity? sev = null;
+            if (!string.IsNullOrWhiteSpace(severity) && Enum.TryParse<AuditSeverity>(severity, true, out var s))
+                sev = s;
+
+            var entries = await _audit.ReadAsync(from, to, actor, action, sev, max, ct);
             return Ok(new { count = entries.Count, entries });
+        }
+
+        /// <summary>Verifica la integridad de la cadena completa. Solo admin.</summary>
+        [HttpGet("audit/verify")]
+        public async Task<IActionResult> VerifyAudit(CancellationToken ct)
+        {
+            var result = await _audit.VerifyAsync(ct);
+            return Ok(new
+            {
+                valid = result.Valid,
+                totalEntries = result.TotalEntries,
+                firstTamperedEntryId = result.FirstTamperedEntryId,
+                tamperReason = result.TamperReason,
+                lastHash = result.LastHash
+            });
         }
 
         [HttpPost("backup")]
@@ -42,13 +65,12 @@ namespace AtlasGT.Api.Controllers
             try
             {
                 var path = await _backup.CreateBackupAsync(null, ct);
-                await Audit("backup.create", path, true, null, ct);
+                await Audit("backup.create", path, true, null, AuditSeverity.Critical, ct);
                 return Ok(new { path, sizeBytes = new System.IO.FileInfo(path).Length });
             }
             catch (Exception ex)
             {
-                await Audit("backup.create", null, false, ex.Message, ct);
-                // Incluir source y stack para diagnostico desde scripts (no exponer secretos porque path es local al server).
+                await Audit("backup.create", null, false, ex.Message, AuditSeverity.Critical, ct);
                 var src = (_backup as AtlasGT.Infrastructure.FileBackupService)?.SourceDirForDebug;
                 return StatusCode(500, new
                 {
@@ -73,23 +95,26 @@ namespace AtlasGT.Api.Controllers
             if (req is null || string.IsNullOrWhiteSpace(req.ZipPath))
                 return BadRequest(new { error = "ZipPath requerido" });
             var ok = await _backup.RestoreAsync(req.ZipPath, null, ct);
-            await Audit("backup.restore", req.ZipPath, ok, ok ? null : "restore fallo", ct);
+            await Audit("backup.restore", req.ZipPath, ok, ok ? null : "restore fallo", AuditSeverity.Critical, ct);
             return ok ? Ok(new { restored = req.ZipPath }) : NotFound(new { error = "zip no encontrado o corrupto" });
         }
 
-        private async Task Audit(string action, string? target, bool ok, string? error, CancellationToken ct)
+        private async Task Audit(string action, string? target, bool ok, string? error, AuditSeverity sev, CancellationToken ct)
         {
             try
             {
-                await _audit.RecordAsync(new AuditEntry
+                var role = Request?.Headers["X-Atlas-Role"].FirstOrDefault() ?? "unknown";
+                await _audit.AppendAsync(new SignedAuditEntry
                 {
-                    Id = Guid.NewGuid(),
-                    AtUtc = DateTimeOffset.UtcNow,
-                    Actor = User?.Identity?.Name ?? "anonymous",
+                    Actor = $"role:{role}",
                     Action = action,
                     TargetId = target,
                     Succeeded = ok,
-                    ErrorMessage = error
+                    ErrorMessage = error,
+                    Severity = sev,
+                    SourceIp = HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+                    UserAgent = Request?.Headers.UserAgent.ToString() is { Length: > 256 } ua ? ua.Substring(0, 256) : Request?.Headers.UserAgent.ToString(),
+                    CorrelationId = HttpContext?.TraceIdentifier
                 }, ct);
             }
             catch { /* nunca tumbar por audit */ }

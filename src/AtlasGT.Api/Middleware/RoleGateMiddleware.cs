@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AtlasGT.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -22,11 +23,24 @@ namespace AtlasGT.Api.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<RoleGateMiddleware> _log;
+        private readonly AtlasGT.Infrastructure.ISignedAuditLog _audit;
+        private readonly AtlasGT.Application.Alarms.AlarmEngine _alarms;
 
-        public RoleGateMiddleware(RequestDelegate next, ILogger<RoleGateMiddleware> log)
+        // Correlador simple: contar denegaciones por IP en ventana deslizante
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Collections.Concurrent.ConcurrentQueue<DateTimeOffset>> _denialHistory = new();
+        private const int DenialThreshold = 10;
+        private static readonly TimeSpan DenialWindow = TimeSpan.FromMinutes(1);
+
+        public RoleGateMiddleware(
+            RequestDelegate next,
+            ILogger<RoleGateMiddleware> log,
+            AtlasGT.Infrastructure.ISignedAuditLog audit,
+            AtlasGT.Application.Alarms.AlarmEngine alarms)
         {
             _next = next;
             _log = log;
+            _audit = audit;
+            _alarms = alarms;
         }
 
         public async Task InvokeAsync(HttpContext ctx)
@@ -111,11 +125,67 @@ namespace AtlasGT.Api.Middleware
         private static bool IsIn(string role, params string[] allowed) =>
             allowed.Any(a => string.Equals(a, role, StringComparison.OrdinalIgnoreCase));
 
-        private static async Task Deny(HttpContext ctx, int status, string msg)
+        private async Task Deny(HttpContext ctx, int status, string msg)
         {
             ctx.Response.StatusCode = status;
             ctx.Response.ContentType = "application/json";
             await ctx.Response.WriteAsync($"{{\"error\":\"{msg}\"}}");
+
+            // Auditar TODA denegacion (forense).
+            try
+            {
+                var role = ctx.Request.Headers["X-Atlas-Role"].FirstOrDefault() ?? "viewer";
+                var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                await _audit.AppendAsync(new SignedAuditEntry
+                {
+                    Actor = $"role:{role}",
+                    Action = "http.request.denied",
+                    TargetId = ctx.Request.Path.Value,
+                    Detail = $"method={ctx.Request.Method} reason=\"{msg}\"",
+                    Succeeded = false,
+                    Severity = AuditSeverity.Warning,
+                    SourceIp = ip,
+                    UserAgent = Truncate(ctx.Request.Headers.UserAgent.ToString(), 256),
+                    CorrelationId = ctx.TraceIdentifier
+                });
+
+                // Correlacion: rafaga de denegaciones por misma IP
+                var q = _denialHistory.GetOrAdd(ip, _ => new System.Collections.Concurrent.ConcurrentQueue<DateTimeOffset>());
+                var now = DateTimeOffset.UtcNow;
+                q.Enqueue(now);
+                while (q.TryPeek(out var ts) && now - ts > DenialWindow) q.TryDequeue(out _);
+
+                if (q.Count >= DenialThreshold)
+                {
+                    _alarms.AddRule(new AtlasGT.Application.Alarms.AlarmRule
+                    {
+                        Id = Guid.Empty, // se inicializa abajo con valor unico
+                        Name = $"Denegaciones en rafaga desde {ip}",
+                        SignalKey = $"http.denied.rate.{ip}",
+                        Threshold = DenialThreshold - 1,
+                        Comparison = AtlasGT.Application.Alarms.AlarmComparison.GreaterThan,
+                        Severity = AtlasGT.Domain.Models.AlarmSeverity.Critical,
+                        Debounce = 1,
+                        MaxPerMinute = 1
+                    });
+                    // Emitir instancia de alarma directamente (no esperar a observation)
+                    // El AlarmEngine no tiene canal "manual", asi que usar Process con Observation marcador.
+                    var obs = new AtlasGT.Domain.Models.Observation
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = $"http.denied.rate.{ip}",
+                        Value = q.Count,
+                        Unit = "denials/min",
+                        Transport = "http-middleware",
+                        TrustTier = AtlasGT.Domain.Models.TrustTier.Observed
+                    };
+                    _alarms.Process(obs);
+                }
+            }
+            catch { /* nunca tumbar por audit */ }
         }
+
+        private static string? Truncate(string? s, int max)
+            => s is null ? null : (s.Length <= max ? s : s.Substring(0, max));
     }
 }
