@@ -48,7 +48,15 @@ namespace AtlasGT.Api.Controllers
             catch (Exception ex)
             {
                 await Audit("backup.create", null, false, ex.Message, ct);
-                return StatusCode(500, new { error = ex.Message });
+                // Incluir source y stack para diagnostico desde scripts (no exponer secretos porque path es local al server).
+                var src = (_backup as AtlasGT.Infrastructure.FileBackupService)?.SourceDirForDebug;
+                return StatusCode(500, new
+                {
+                    error = ex.Message,
+                    exceptionType = ex.GetType().Name,
+                    sourceDir = src,
+                    hint = "revisar logs del proceso y audit log"
+                });
             }
         }
 

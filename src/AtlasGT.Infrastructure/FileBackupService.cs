@@ -39,13 +39,21 @@ namespace AtlasGT.Infrastructure
             Directory.CreateDirectory(dest);
 
             var stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
-            var fileName = $"atlasgt-backup-{stamp}.zip";
+            // Sufijo para evitar colision cuando dos backups corren dentro del mismo segundo.
+            var suffix = Guid.NewGuid().ToString("N").Substring(0, 6);
+            var fileName = $"atlasgt-backup-{stamp}-{suffix}.zip";
             var fullPath = Path.Combine(dest, fileName);
+
+            if (!Directory.Exists(_sourceDir))
+                throw new InvalidOperationException($"sourceDir no existe: {_sourceDir}");
 
             await Task.Run(() =>
             {
                 System.IO.Compression.ZipFile.CreateFromDirectory(_sourceDir, fullPath);
             }, ct).ConfigureAwait(false);
+
+            if (!File.Exists(fullPath))
+                throw new InvalidOperationException($"zip no aparecio despues de CreateFromDirectory: {fullPath}");
 
             return fullPath;
         }

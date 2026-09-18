@@ -109,9 +109,22 @@ CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/api/discovery/tc
 [ "$CODE" = "400" ] && ok "discovery sin auth = 400" || bad "discovery: esperaba 400, recibio $CODE"
 
 echo "== 8) Backup E2E =="
-BK=$(curl -sf -X POST "$API_URL/api/admin/backup" "${H_ADMIN[@]}")
-BK_PATH=$(echo "$BK" | python -c 'import json,sys; print(json.load(sys.stdin)["path"])')
-[ -f "$BK_PATH" ] && ok "backup creado en $BK_PATH" || bad "backup no existe en disco"
+RESP=$(curl -s -w "\nHTTP:%{http_code}" -X POST "$API_URL/api/admin/backup" "${H_ADMIN[@]}")
+CODE=$(echo "$RESP" | grep "^HTTP:" | cut -d: -f2)
+BODY=$(echo "$RESP" | grep -v "^HTTP:")
+if [ "$CODE" != "200" ]; then
+  echo "  backup HTTP $CODE, body:"
+  echo "$BODY" | head -5 | sed 's/^/    /'
+  bad "backup endpoint devolvio $CODE"
+else
+  BK_PATH=$(echo "$BODY" | python -c 'import json,sys; print(json.load(sys.stdin)["path"])' 2>&1)
+  if [ -z "$BK_PATH" ] || [ ! -f "$BK_PATH" ]; then
+    echo "  body recibido: $BODY"
+    bad "backup: path invalido o archivo no aparece: '$BK_PATH'"
+  else
+    ok "backup creado en $BK_PATH"
+  fi
+fi
 
 echo "== 9) Audit log consultable =="
 AUDIT=$(curl -sf "$API_URL/api/admin/audit" -H "X-Atlas-Role: admin")
