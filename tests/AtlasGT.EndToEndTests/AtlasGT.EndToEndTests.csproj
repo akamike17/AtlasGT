@@ -22,6 +22,8 @@
     <ProjectReference Include="..\..\src\AtlasGT.Historian\AtlasGT.Historian.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Normalization\AtlasGT.Normalization.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Security\AtlasGT.Security.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Discovery\AtlasGT.Discovery.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Mqtt\AtlasGT.Connectors.Mqtt.csproj" />
   </ItemGroup>
 
 </Project>

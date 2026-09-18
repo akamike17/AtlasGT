@@ -55,10 +55,9 @@ namespace AtlasGT.ProtocolTests
 
         private static int GetFreePort()
         {
-            using var listener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            listener.Stop();
+            using var udp = new UdpClient(0);
+            var port = ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
+            udp.Close();
             return port;
         }
     }
