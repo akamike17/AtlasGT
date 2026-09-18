@@ -1,2 +1,15 @@
 @page
-<h1>Hello from AtlasGT.Web!</h1>
+@model AtlasGT.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = "AtlasGT - Estado";
+}
+<h1>AtlasGT</h1>
+<p>Gateway industrial modular. Estado: <strong>ONLINE</strong></p>
+<hr />
+<h2>Accesos</h2>
+<ul>
+  <li><a href="/api/endpoints">API / Endpoints (JSON)</a></li>
+  <li>SignalR observations hub: <code>/hubs/observations</code></li>
+</ul>
+<h2>Notas</h2>
+<p>Esta UI es el punto de partida minimo. La operacion completa (operador/admin/lab) se construye sobre la API.</p>
