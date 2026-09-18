@@ -46,6 +46,8 @@ builder.Services.AddSingleton<IDoctorService, DoctorService>();
 builder.Services.AddSingleton<AlarmEngine>();
 builder.Services.AddSingleton<ObservationStreamer>();
 builder.Services.AddSingleton<TcpPortDiscovery>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AtlasGT.Api.Services.AuditHelper>();
 
 var app = builder.Build();
 

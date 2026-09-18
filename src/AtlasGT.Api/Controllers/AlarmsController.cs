@@ -15,11 +15,13 @@ namespace AtlasGT.Api.Controllers
     {
         private readonly ConfigStore _store;
         private readonly AlarmEngine _engine;
+        private readonly AtlasGT.Api.Services.AuditHelper _audit;
 
-        public AlarmsController(ConfigStore store, AlarmEngine engine)
+        public AlarmsController(ConfigStore store, AlarmEngine engine, AtlasGT.Api.Services.AuditHelper audit)
         {
             _store = store;
             _engine = engine;
+            _audit = audit;
         }
 
         [HttpGet("rules")]
@@ -34,33 +36,47 @@ namespace AtlasGT.Api.Controllers
             if (rule.Id == Guid.Empty) rule.Id = Guid.NewGuid();
             await _store.MutateAsync<object?>(snap => { snap.AlarmRules.Add(rule); return null; }, ct);
             SyncEngine(rule);
+            await _audit.RecordChangeAsync("alarm.rule.create", rule.Id.ToString(), null, rule, AuditSeverity.Warning, ct);
             return CreatedAtAction(nameof(GetRules), new { id = rule.Id }, rule);
         }
 
         [HttpDelete("rules/{id:guid}")]
         public async Task<IActionResult> DeleteRule(Guid id, CancellationToken ct)
         {
-            var removed = await _store.MutateAsync(snap => snap.AlarmRules.RemoveAll(r => r.Id == id), ct);
-            return removed > 0 ? NoContent() : NotFound();
+            AlarmRuleDto? removed = null;
+            var n = await _store.MutateAsync(snap =>
+            {
+                removed = snap.AlarmRules.FirstOrDefault(r => r.Id == id);
+                return snap.AlarmRules.RemoveAll(r => r.Id == id);
+            }, ct);
+            if (n > 0)
+                await _audit.RecordChangeAsync("alarm.rule.delete", id.ToString(), removed, null, AuditSeverity.Critical, ct);
+            return n > 0 ? NoContent() : NotFound();
         }
 
         [HttpGet("active")]
         public IActionResult Active() => Ok(_engine.ActiveAlarms);
 
         [HttpPost("{id:guid}/ack")]
-        public IActionResult Ack(Guid id, [FromBody] AckRequest req)
+        public async Task<IActionResult> Ack(Guid id, [FromBody] AckRequest req, CancellationToken ct)
         {
             if (req is null || string.IsNullOrWhiteSpace(req.Actor))
                 return BadRequest(new { error = "Actor requerido" });
-            return _engine.Acknowledge(id, req.Actor) ? Ok() : NotFound();
+            var ok = _engine.Acknowledge(id, req.Actor);
+            if (ok)
+                await _audit.RecordActionAsync("alarm.ack", id.ToString(), true, null, AuditSeverity.Warning, ct);
+            return ok ? Ok() : NotFound();
         }
 
         [HttpPost("{id:guid}/clear")]
-        public IActionResult Clear(Guid id, [FromBody] ClearRequest req)
+        public async Task<IActionResult> Clear(Guid id, [FromBody] ClearRequest req, CancellationToken ct)
         {
             if (req is null || string.IsNullOrWhiteSpace(req.Reason))
                 return BadRequest(new { error = "Reason requerido" });
-            return _engine.Clear(id, req.Reason) ? Ok() : NotFound();
+            var ok = _engine.Clear(id, req.Reason);
+            if (ok)
+                await _audit.RecordActionAsync("alarm.clear", id.ToString(), true, null, AuditSeverity.Warning, ct);
+            return ok ? Ok() : NotFound();
         }
 
         private void SyncEngine(AlarmRuleDto dto)

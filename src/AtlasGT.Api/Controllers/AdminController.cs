@@ -59,6 +59,72 @@ namespace AtlasGT.Api.Controllers
             });
         }
 
+        /// <summary>
+        /// Export CSV del audit log con manifiesto SHA-256 al final.
+        /// El CSV incluye columna EntryHash y PrevHash para verificacion offline.
+        /// Termina con una linea `MANIFEST,<sha256-del-csv-sin-manifiesto>,<entries>` que
+        /// permite detectar cualquier alteracion post-export.
+        /// </summary>
+        [HttpGet("audit/export.csv")]
+        public async Task<IActionResult> ExportAuditCsv(CancellationToken ct)
+        {
+            var entries = await _audit.ReadAsync(limit: 10000, ct: ct);
+            // Orden cronologico (no mas-recientes-primero) para que el CSV sea replay-able
+            var chrono = entries.OrderBy(e => e.AtUtc).ToList();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("id,atUtc,actor,action,targetId,succeeded,severity,sourceIp,userAgent,correlationId,errorMessage,entryHash,prevHash");
+            foreach (var e in chrono)
+            {
+                sb.AppendLine(string.Join(",", new[]
+                {
+                    Csv(e.Id.ToString()),
+                    Csv(e.AtUtc.ToString("O")),
+                    Csv(e.Actor),
+                    Csv(e.Action),
+                    Csv(e.TargetId),
+                    e.Succeeded ? "1" : "0",
+                    Csv(e.Severity.ToString()),
+                    Csv(e.SourceIp),
+                    Csv(e.UserAgent),
+                    Csv(e.CorrelationId),
+                    Csv(e.ErrorMessage),
+                    Csv(e.EntryHash),
+                    Csv(e.PrevHash)
+                }));
+            }
+
+            // Manifiesto: hash del contenido hasta aqui (sin la linea MANIFEST)
+            var csvBody = sb.ToString();
+            var bodyBytes = System.Text.Encoding.UTF8.GetBytes(csvBody);
+            var hash = System.Security.Cryptography.SHA256.HashData(bodyBytes);
+            var manifestLine = $"MANIFEST,{Convert.ToHexString(hash).ToLowerInvariant()},{chrono.Count}";
+            sb.AppendLine(manifestLine);
+
+            await _audit.AppendAsync(new SignedAuditEntry
+            {
+                Actor = "role:" + (Request.Headers["X-Atlas-Role"].FirstOrDefault() ?? "unknown"),
+                Action = "audit.export",
+                Detail = $"entries={chrono.Count}",
+                Succeeded = true,
+                Severity = AuditSeverity.Warning,
+                SourceIp = HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+                CorrelationId = HttpContext?.TraceIdentifier
+            }, ct);
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+            var fname = $"atlas-audit-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+            return File(bytes, "text/csv", fname);
+        }
+
+        private static string Csv(string? s)
+        {
+            if (s is null) return "";
+            if (s.Contains(',') || s.Contains('"') || s.Contains('\n') || s.Contains('\r'))
+                return "\"" + s.Replace("\"", "\"\"") + "\"";
+            return s;
+        }
+
         [HttpPost("backup")]
         public async Task<IActionResult> CreateBackup(CancellationToken ct)
         {

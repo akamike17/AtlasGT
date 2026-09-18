@@ -17,11 +17,13 @@ namespace AtlasGT.Api.Controllers
     {
         private readonly ConfigStore _store;
         private readonly IDoctorService _doctor;
+        private readonly AtlasGT.Api.Services.AuditHelper _audit;
 
-        public EndpointsController(ConfigStore store, IDoctorService doctor)
+        public EndpointsController(ConfigStore store, IDoctorService doctor, AtlasGT.Api.Services.AuditHelper audit)
         {
             _store = store;
             _doctor = doctor;
+            _audit = audit;
         }
 
         [HttpGet]
@@ -52,14 +54,22 @@ namespace AtlasGT.Api.Controllers
             model.CreatedAt = DateTime.UtcNow;
             model.UpdatedAt = DateTime.UtcNow;
             await _store.MutateAsync<object?>(snap => { snap.Endpoints.Add(model); return null; }, ct);
+            await _audit.RecordChangeAsync("endpoint.create", model.Id.ToString(), null, model, ct: ct);
             return CreatedAtAction(nameof(GetById), new { id = model.Id }, model);
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
         {
-            var removed = await _store.MutateAsync(snap => snap.Endpoints.RemoveAll(e => e.Id == id), ct);
-            return removed > 0 ? NoContent() : NotFound();
+            DomainEndpoint? removed = null;
+            var removedCount = await _store.MutateAsync(snap =>
+            {
+                removed = snap.Endpoints.FirstOrDefault(e => e.Id == id);
+                return snap.Endpoints.RemoveAll(e => e.Id == id);
+            }, ct);
+            if (removedCount > 0)
+                await _audit.RecordChangeAsync("endpoint.delete", id.ToString(), removed, null, AuditSeverity.Warning, ct);
+            return removedCount > 0 ? NoContent() : NotFound();
         }
 
         /// <summary>

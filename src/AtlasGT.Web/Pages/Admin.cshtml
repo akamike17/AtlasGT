@@ -49,14 +49,36 @@
 </section>
 
 <section class="card">
+  <h2>Auditoria firmada</h2>
+  <div class="row">
+    <button id="verifyAuditBtn">Verificar integridad</button>
+    <button id="auditBtn" class="secondary">Recargar lista</button>
+    <a id="exportAuditLink" class="secondary" style="padding:.4rem .8rem; border:1px solid #22303e; border-radius:6px; cursor:pointer; text-decoration:none; color:inherit;">Exportar CSV firmado</a>
+  </div>
+  <div class="row">
+    <div class="field"><label>Actor</label><input id="fltActor" placeholder="admin, lab, ..." /></div>
+    <div class="field"><label>Accion</label><input id="fltAction" placeholder="asset.create, backup.create, ..." /></div>
+    <div class="field"><label>Severidad</label>
+      <select id="fltSeverity">
+        <option value="">todas</option>
+        <option value="Info">Info</option>
+        <option value="Warning">Warning</option>
+        <option value="Critical">Critical</option>
+      </select>
+    </div>
+    <div class="field" style="align-self:end;"><button id="fltApply" class="secondary">Aplicar filtros</button></div>
+  </div>
+  <div id="verifyBadge" class="muted">—</div>
+  <div id="auditList" class="muted">—</div>
+</section>
+
+<section class="card">
   <h2>Config — Backup / Restore</h2>
   <div class="row">
     <button id="backupBtn">Crear backup ahora</button>
     <button id="listBackupsBtn" class="secondary">Listar backups</button>
-    <button id="auditBtn" class="secondary">Ver auditoria</button>
   </div>
   <div id="backupsList" class="muted">—</div>
-  <div id="auditList" class="muted">—</div>
 </section>
 
 <section class="card">
@@ -208,13 +230,66 @@
   };
   $('#listBackupsBtn').onclick = loadBackups;
   $('#auditBtn').onclick = loadAudit;
+  $('#fltApply').onclick = loadAudit;
+  $('#verifyAuditBtn').onclick = async () => {
+    const r = await call('/api/admin/audit/verify', { headers: H });
+    const ok = r.valid;
+    $('#verifyBadge').innerHTML = ok
+      ? `<span class="badge good">Cadena valida</span> · ${r.totalEntries} entradas · lastHash ${r.lastHash?.substring(0,16)}…`
+      : `<span class="badge crit">ALTERADO</span> · entrada ${r.firstTamperedEntryId} · ${esc(r.tamperReason)}`;
+  };
+  $('#exportAuditLink').onclick = async () => {
+    // Descarga via fetch con header, luego blob
+    try {
+      const r = await fetch(api + '/api/admin/audit/export.csv', { headers: H });
+      if (!r.ok) { alert('export fallo: ' + r.status); return; }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'atlas-audit.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { alert('export: ' + e.message); }
+  };
+
+  function diffHtml(before, after) {
+    if (!before && !after) return '';
+    const parse = s => { try { return JSON.parse(s); } catch { return null; } };
+    const b = parse(before); const a = parse(after);
+    if (!b && !a) return '';
+    const keys = new Set([...(b ? Object.keys(b) : []), ...(a ? Object.keys(a) : [])]);
+    let rows = [];
+    for (const k of keys) {
+      const bv = b?.[k]; const av = a?.[k];
+      const bStr = bv === undefined || bv === null ? '—' : JSON.stringify(bv);
+      const aStr = av === undefined || av === null ? '—' : JSON.stringify(av);
+      if (bStr === aStr) rows.push(`<tr><td>${esc(k)}</td><td class="muted">${esc(bStr)}</td><td class="muted">${esc(aStr)}</td></tr>`);
+      else rows.push(`<tr><td>${esc(k)}</td><td style="background:#5a1d1d;color:#ffb4ae">${esc(bStr)}</td><td style="background:#1d4a26;color:#8fd6a2">${esc(aStr)}</td></tr>`);
+    }
+    return `<table style="font-size:.8rem"><thead><tr><th>campo</th><th>antes</th><th>despues</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+
   async function loadAudit() {
     try {
-      const r = await call('/api/admin/audit?max=50', { headers: H });
-      $('#auditList').innerHTML = r.entries.length
-        ? '<ul>' + r.entries.map(e =>
-            `<li><strong>${esc(e.action)}</strong> · ${esc(e.actor)} · ${e.atUtc} ${e.succeeded ? '✓' : '✗'} ${e.targetId ? esc(e.targetId) : ''}</li>`).join('') + '</ul>'
-        : 'Sin entradas de auditoria.';
+      const params = new URLSearchParams();
+      const actor = $('#fltActor').value.trim(); if (actor) params.set('actor', actor);
+      const action = $('#fltAction').value.trim(); if (action) params.set('action', action);
+      const sev = $('#fltSeverity').value; if (sev) params.set('severity', sev);
+      params.set('max', '50');
+      const r = await call('/api/admin/audit?' + params.toString(), { headers: H });
+      if (!r.entries.length) { $('#auditList').innerHTML = '<span class="muted">Sin entradas.</span>'; return; }
+      $('#auditList').innerHTML = '<ul>' + r.entries.map(e => {
+        const hash = (e.entryHash || '').substring(0, 8);
+        const sevBadge = e.severity === 2 ? '<span class="badge crit">C</span>'
+                       : e.severity === 1 ? '<span class="badge warn">W</span>'
+                       : '<span class="badge good">I</span>';
+        const diff = (e.payloadBefore || e.payloadAfter) ? diffHtml(e.payloadBefore, e.payloadAfter) : '';
+        return `<li>${sevBadge} <code>${hash}</code> <strong>${esc(e.action)}</strong> · ${esc(e.actor)} · ${e.atUtc}
+          ${e.succeeded ? '' : ' <span class="badge crit">FALLO</span>'}
+          ${e.targetId ? `<span class="muted">→ ${esc(e.targetId)}</span>` : ''}
+          ${diff ? '<details><summary class="muted">diff</summary>' + diff + '</details>' : ''}
+          ${e.sourceIp ? `<span class="muted"> · ${esc(e.sourceIp)}</span>` : ''}
+        </li>`;
+      }).join('') + '</ul>';
     } catch (e) { $('#auditList').textContent = 'error: ' + e.message; }
   }
   async function loadBackups() {

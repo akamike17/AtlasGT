@@ -15,8 +15,13 @@ namespace AtlasGT.Api.Controllers
     public class AssetsController : ControllerBase
     {
         private readonly ConfigStore _store;
+        private readonly AtlasGT.Api.Services.AuditHelper _audit;
 
-        public AssetsController(ConfigStore store) => _store = store;
+        public AssetsController(ConfigStore store, AtlasGT.Api.Services.AuditHelper audit)
+        {
+            _store = store;
+            _audit = audit;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<Asset>>> GetAll(CancellationToken ct)
@@ -42,6 +47,7 @@ namespace AtlasGT.Api.Controllers
             model.CreatedAt = DateTime.UtcNow;
             model.UpdatedAt = DateTime.UtcNow;
             await _store.MutateAsync<object?>(snap => { snap.Assets.Add(model); return null; }, ct);
+            await _audit.RecordChangeAsync("asset.create", model.Id.ToString(), before: null, after: model, ct: ct);
             return CreatedAtAction(nameof(GetById), new { id = model.Id }, model);
         }
 
@@ -50,10 +56,12 @@ namespace AtlasGT.Api.Controllers
         {
             if (model is null || string.IsNullOrWhiteSpace(model.Name))
                 return BadRequest(new { error = "Name requerido" });
+            Asset? before = null;
             var result = await _store.MutateAsync<Asset?>(snap =>
             {
                 var a = snap.Assets.FirstOrDefault(x => x.Id == id);
                 if (a is null) return null;
+                before = new Asset { Id = a.Id, Name = a.Name, Tag = a.Tag, Description = a.Description, AreaId = a.AreaId };
                 a.Name = model.Name;
                 a.Description = model.Description;
                 a.Tag = model.Tag;
@@ -61,14 +69,23 @@ namespace AtlasGT.Api.Controllers
                 a.UpdatedAt = DateTime.UtcNow;
                 return a;
             }, ct);
+            if (result is not null)
+                await _audit.RecordChangeAsync("asset.update", id.ToString(), before, result, ct: ct);
             return result is null ? NotFound() : Ok(result);
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
         {
-            var removed = await _store.MutateAsync(snap => snap.Assets.RemoveAll(a => a.Id == id), ct);
-            return removed > 0 ? NoContent() : NotFound();
+            Asset? removed = null;
+            var removedCount = await _store.MutateAsync(snap =>
+            {
+                removed = snap.Assets.FirstOrDefault(a => a.Id == id);
+                return snap.Assets.RemoveAll(a => a.Id == id);
+            }, ct);
+            if (removedCount > 0)
+                await _audit.RecordChangeAsync("asset.delete", id.ToString(), removed, after: null, severity: AuditSeverity.Warning, ct: ct);
+            return removedCount > 0 ? NoContent() : NotFound();
         }
 
         /// <summary>Estado accionable para operador: nombre + ultimos signals + salud.</summary>

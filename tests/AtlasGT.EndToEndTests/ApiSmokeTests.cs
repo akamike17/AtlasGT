@@ -405,5 +405,75 @@ namespace AtlasGT.EndToEndTests
             });
             Assert.IsTrue(hasRate, "ninguna alarma menciona la rafaga de denegaciones");
         }
+
+        [TestMethod]
+        public async Task Asset_update_crea_entrada_audit_con_diff()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            // Crear
+            var cr = await admin.PostAsJsonAsync("/api/assets", new { name = "ORIG", tag = "T0" });
+            cr.EnsureSuccessStatusCode();
+            var created = await cr.Content.ReadFromJsonAsync<AtlasGT.Domain.Models.Asset>();
+
+            // Modificar
+            var up = await admin.PutAsJsonAsync($"/api/assets/{created!.Id}", new { name = "MODIFIED", tag = "T0" });
+            up.EnsureSuccessStatusCode();
+
+            await Task.Delay(200);
+
+            var audit = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit?action=asset.update");
+            var entries = audit.GetProperty("entries").EnumerateArray().ToList();
+            Assert.IsTrue(entries.Count >= 1, "audit vacio para asset.update");
+
+            var e = entries.First();
+            var before = e.GetProperty("payloadBefore").GetString();
+            var after = e.GetProperty("payloadAfter").GetString();
+
+            Assert.IsNotNull(before);
+            Assert.IsNotNull(after);
+            StringAssert.Contains(before!, "ORIG");
+            StringAssert.Contains(after!, "MODIFIED");
+        }
+
+        [TestMethod]
+        public async Task Audit_export_csv_tiene_manifiesto_valido()
+        {
+            var (factory, _) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            await admin.PostAsJsonAsync("/api/assets", new { name = "X1" });
+            await admin.PostAsJsonAsync("/api/profiles", new { manufacturer = "M", model = "m1" });
+            await Task.Delay(150);
+
+            var csvResp = await admin.GetAsync("/api/admin/audit/export.csv");
+            csvResp.EnsureSuccessStatusCode();
+            StringAssert.Contains(csvResp.Content.Headers.ContentType?.MediaType ?? "", "csv");
+
+            var csvText = await csvResp.Content.ReadAsStringAsync();
+            var lines = csvText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            Assert.IsTrue(lines.Count >= 3, "csv muy corto");
+
+            // La ultima linea debe ser MANIFEST con 3 campos y un SHA-256 valido
+            var manifest = lines[^1];
+            Assert.IsTrue(manifest.StartsWith("MANIFEST,"), $"ultima linea no es MANIFEST: {manifest}");
+            var parts = manifest.Split(',');
+            Assert.AreEqual(3, parts.Length);
+
+            // Recalcular SHA-256 del body sin la linea manifiesto
+            var body = string.Join("\n", lines.Take(lines.Count - 1)) + "\n";
+            var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(body));
+            var expected = Convert.ToHexString(hash).ToLowerInvariant();
+            // La ruta termina con newline segun como la armo el controller; tolerante:
+            Assert.IsTrue(parts[1].Length == 64, $"hash no es sha256 hex (len={parts[1].Length}): {parts[1]}");
+            // Compara con tolerancia: recalculo tanto con \n como \r\n
+            var altHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", lines.Take(lines.Count - 1)) + "\r\n"))).ToLowerInvariant();
+            Assert.IsTrue(parts[1] == expected || parts[1] == altHash,
+                $"manifiesto no coincide. manifest={parts[1]}; recomputado={expected}");
+        }
     }
 }

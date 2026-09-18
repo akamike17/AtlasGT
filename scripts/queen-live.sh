@@ -131,6 +131,24 @@ AUDIT=$(curl -sf "$API_URL/api/admin/audit" -H "X-Atlas-Role: admin")
 ACNT=$(echo "$AUDIT" | python -c 'import json,sys; print(json.load(sys.stdin)["count"])' 2>/dev/null || echo 0)
 [ "$ACNT" -ge 1 ] && ok "audit log devuelve $ACNT entradas" || bad "audit vacio"
 
+echo "== 9b) Audit chain integra =="
+VERIFY=$(curl -sf "$API_URL/api/admin/audit/verify" -H "X-Atlas-Role: admin")
+VALID=$(echo "$VERIFY" | python -c 'import json,sys; print(json.load(sys.stdin)["valid"])' 2>/dev/null || echo "false")
+[ "$VALID" = "True" ] && ok "audit chain valida" || bad "audit chain invalida: $VERIFY"
+
+echo "== 9c) Export CSV firmado =="
+CSV_RESP=$(curl -s -w "\nHTTP:%{http_code}" "$API_URL/api/admin/audit/export.csv" -H "X-Atlas-Role: admin")
+CSV_CODE=$(echo "$CSV_RESP" | grep "^HTTP:" | cut -d: -f2)
+CSV_BODY=$(echo "$CSV_RESP" | grep -v "^HTTP:")
+[ "$CSV_CODE" = "200" ] || { bad "export csv con HTTP $CSV_CODE"; }
+if [ "$CSV_CODE" = "200" ]; then
+  LAST=$(echo "$CSV_BODY" | tail -1)
+  case "$LAST" in
+    MANIFEST,*) ok "csv trae MANIFEST firmado" ;;
+    *) bad "csv sin MANIFEST: ultima linea: $LAST" ;;
+  esac
+fi
+
 echo "== 10) Web UI responde HTML para Operador =="
 curl -sf "$WEB_URL/" | grep -q "Operador\|Operación\|operador" \
   && ok "Web raiz marca la vista de operador" || bad "Web raiz no tiene marca de rol operador"

@@ -15,7 +15,12 @@ namespace AtlasGT.Api.Controllers
     public class ProfilesController : ControllerBase
     {
         private readonly ConfigStore _store;
-        public ProfilesController(ConfigStore store) => _store = store;
+        private readonly AtlasGT.Api.Services.AuditHelper _audit;
+        public ProfilesController(ConfigStore store, AtlasGT.Api.Services.AuditHelper audit)
+        {
+            _store = store;
+            _audit = audit;
+        }
 
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<DeviceProfile>>> GetAll(CancellationToken ct)
@@ -36,14 +41,22 @@ namespace AtlasGT.Api.Controllers
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedAt = DateTime.UtcNow;
             await _store.MutateAsync<object?>(snap => { snap.Profiles.Add(model); return null; }, ct);
+            await _audit.RecordChangeAsync("profile.create", model.Id.ToString(), null, model, ct: ct);
             return CreatedAtAction(nameof(GetById), new { id = model.Id }, model);
         }
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
         {
-            var removed = await _store.MutateAsync(snap => snap.Profiles.RemoveAll(p => p.Id == id), ct);
-            return removed > 0 ? NoContent() : NotFound();
+            DeviceProfile? removed = null;
+            var n = await _store.MutateAsync(snap =>
+            {
+                removed = snap.Profiles.FirstOrDefault(p => p.Id == id);
+                return snap.Profiles.RemoveAll(p => p.Id == id);
+            }, ct);
+            if (n > 0)
+                await _audit.RecordChangeAsync("profile.delete", id.ToString(), removed, null, AuditSeverity.Warning, ct);
+            return n > 0 ? NoContent() : NotFound();
         }
 
         /// <summary>Exportar todo el catalogo de perfiles como JSON (portable).</summary>
@@ -75,6 +88,8 @@ namespace AtlasGT.Api.Controllers
                 }
                 return n;
             }, ct);
+            await _audit.RecordActionAsync("profile.import", null, true, null,
+                added > 0 ? AuditSeverity.Warning : AuditSeverity.Info, ct);
             return Ok(new { imported = added });
         }
     }
