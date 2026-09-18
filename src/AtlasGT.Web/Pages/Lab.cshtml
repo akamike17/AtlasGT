@@ -71,7 +71,7 @@
     try {
       const r = await call('/api/discovery/tcp-scan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Atlas-Role': 'lab' },
         body: JSON.stringify({ host: f.get('host'), authorizationToken: f.get('auth'), ports })
       });
       $('#scanResult').textContent = JSON.stringify(r, null, 2);
@@ -82,7 +82,7 @@
     e.preventDefault();
     const f = new FormData(e.target);
     await call('/api/sandbox/publish', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Atlas-Role': 'lab' },
       body: JSON.stringify({ signalKey: f.get('signalKey'), value: parseFloat(f.get('value')), unit: f.get('unit') })
     });
     refreshAlarms();

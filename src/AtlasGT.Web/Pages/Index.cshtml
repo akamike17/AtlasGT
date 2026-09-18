@@ -109,7 +109,7 @@
       try {
         await fetchJson(`/api/alarms/${id}/ack`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Atlas-Role': 'operator' },
           body: JSON.stringify({ actor: 'operador-ui' })
         });
         addEvent('Alarma reconocida.');
@@ -185,7 +185,7 @@
     try {
       await fetchJson('/api/sandbox/publish', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Atlas-Role': 'operator' },
         body: JSON.stringify({
           signalKey: 'temperatura',
           value: 20 + Math.random() * 60,

@@ -21,6 +21,8 @@ namespace AtlasGT.Infrastructure
     {
         private readonly string _sourceDir;
 
+        public string SourceDirForDebug => _sourceDir;
+
         public FileBackupService(string sourceDir)
         {
             if (string.IsNullOrWhiteSpace(sourceDir)) throw new ArgumentException("sourceDir requerido", nameof(sourceDir));
@@ -29,8 +31,11 @@ namespace AtlasGT.Infrastructure
 
         public async Task<string> CreateBackupAsync(string? destinationDir = null, CancellationToken ct = default)
         {
-            // Colocar backups fuera del sourceDir por defecto, para que el zip no se contenga a si mismo.
-            var dest = destinationDir ?? Path.Combine(Directory.GetParent(_sourceDir)?.FullName ?? _sourceDir, "backups");
+            // Default: subdirectorio hermano pero oculto del source, con nombre unico por source
+            // para que multiples instancias en TestInitialize paralelo no compartan el dir de backups.
+            var parent = Directory.GetParent(_sourceDir)?.FullName ?? _sourceDir;
+            var tag = Path.GetFileName(_sourceDir.TrimEnd(Path.DirectorySeparatorChar));
+            var dest = destinationDir ?? Path.Combine(parent, $".backups-{tag}");
             Directory.CreateDirectory(dest);
 
             var stamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
@@ -64,7 +69,9 @@ namespace AtlasGT.Infrastructure
 
         public Task<IReadOnlyList<string>> ListBackupsAsync(string? destinationDir = null, CancellationToken ct = default)
         {
-            var dest = destinationDir ?? Path.Combine(Directory.GetParent(_sourceDir)?.FullName ?? _sourceDir, "backups");
+            var parent = Directory.GetParent(_sourceDir)?.FullName ?? _sourceDir;
+            var tag = Path.GetFileName(_sourceDir.TrimEnd(Path.DirectorySeparatorChar));
+            var dest = destinationDir ?? Path.Combine(parent, $".backups-{tag}");
             if (!Directory.Exists(dest))
                 return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
 
