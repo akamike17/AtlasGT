@@ -1,15 +1,205 @@
 @page
-@model AtlasGT.Web.Pages.IndexModel
+@model IndexModel
 @{
-    ViewData["Title"] = "AtlasGT - Estado";
+    ViewData["Title"] = "Operador";
 }
-<h1>AtlasGT</h1>
-<p>Gateway industrial modular. Estado: <strong>ONLINE</strong></p>
-<hr />
-<h2>Accesos</h2>
-<ul>
-  <li><a href="/api/endpoints">API / Endpoints (JSON)</a></li>
-  <li>SignalR observations hub: <code>/hubs/observations</code></li>
-</ul>
-<h2>Notas</h2>
-<p>Esta UI es el punto de partida minimo. La operacion completa (operador/admin/lab) se construye sobre la API.</p>
+
+<section class="card">
+  <h2>Maquina</h2>
+  <div class="row">
+    <div class="field" style="flex:1; min-width:280px;">
+      <label for="assetSelect">Selecciona maquina</label>
+      <select id="assetSelect"><option value="">— cargando… —</option></select>
+    </div>
+    <button id="refreshBtn" class="secondary">Actualizar</button>
+    <button id="sandboxBtn" class="secondary" title="Publica una observacion simulada (solo si el API esta en sandbox)">Emitir señal simulada</button>
+  </div>
+  <div id="assetInfo" class="kv muted">Sin seleccion.</div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h2>Señales clave</h2>
+    <table id="signalsTable">
+      <thead><tr><th>Señal</th><th>Valor</th><th>Unidad</th><th>Estado</th></tr></thead>
+      <tbody><tr><td colspan="4" class="muted">Sin datos.</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Alarmas activas</h2>
+    <div id="alarmsList" class="muted">Sin alarmas.</div>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Eventos recientes</h2>
+  <ul id="eventsList" class="muted"><li>—</li></ul>
+</section>
+
+@section Scripts {
+<script>
+(function () {
+  const hubUrl = '@(Model.ApiBaseUrl)/hubs/observations';
+  const apiUrl = '@(Model.ApiBaseUrl)';
+  const $ = sel => document.querySelector(sel);
+  const live = document.getElementById('live-indicator');
+  const setLive = (state, label) => { live.dataset.state = state; live.querySelector('.lbl').textContent = label; };
+
+  let currentAsset = null;
+  let lastSignals = {}; // key -> {value, unit, ts}
+
+  async function fetchJson(path, opts) {
+    const r = await fetch(apiBase() + path, opts);
+    if (!r.ok) throw new Error(await r.text());
+    return r.status === 204 ? null : r.json();
+  }
+  const apiBase = () => apiUrl;
+
+  async function loadAssets() {
+    try {
+      const assets = await fetchJson('/api/assets');
+      const sel = $('#assetSelect');
+      sel.innerHTML = '<option value="">— elige —</option>' + assets.map(a =>
+        `<option value="${a.id}">${escapeHtml(a.tag || a.name)}</option>`).join('');
+    } catch (e) { addEvent('Error cargando maquinas: ' + e.message); }
+  }
+
+  async function loadAsset(id) {
+    if (!id) { $('#assetInfo').innerHTML = 'Sin seleccion.'; return; }
+    try {
+      const data = await fetchJson(`/api/assets/${id}/dashboard`);
+      currentAsset = data.asset;
+      $('#assetInfo').innerHTML = `
+        <dt>Nombre</dt><dd>${escapeHtml(data.asset.name)}</dd>
+        <dt>Tag</dt><dd>${escapeHtml(data.asset.tag || '—')}</dd>
+        <dt>Endpoints</dt><dd>${data.endpoints.length}</dd>`;
+      paintSignals([]);
+      for (const ep of data.endpoints) {
+        try { await signalRJoin(ep.id); } catch { /* noop */ }
+      }
+    } catch (e) { addEvent('Error dashboard: ' + e.message); }
+  }
+
+  function paintSignals(rows) {
+    const tbody = $('#signalsTable tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">Sin señales aún. Esperando observaciones en vivo…</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${r.value ?? '—'}</td>
+        <td>${escapeHtml(r.unit || '')}</td>
+        <td><span class="badge good">OK</span></td>
+      </tr>`).join('');
+  }
+
+  function paintAlarms(alarms) {
+    const div = $('#alarmsList');
+    if (!alarms.length) { div.innerHTML = '<span class="muted">Sin alarmas activas.</span>'; return; }
+    div.innerHTML = alarms.map(a => `
+      <div class="alert ${a.severity === 2 ? 'crit' : 'warn'}">
+        <strong>${escapeHtml(a.ruleName)}</strong> · ${escapeHtml(a.signalKey)}=${a.value}
+        <button class="secondary" data-ack="${a.id}">Reconocer</button>
+      </div>`).join('');
+    div.querySelectorAll('button[data-ack]').forEach(b => b.addEventListener('click', async ev => {
+      const id = ev.target.dataset.ack;
+      try {
+        await fetchJson(`/api/alarms/${id}/ack`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actor: 'operador-ui' })
+        });
+        addEvent('Alarma reconocida.');
+        await refreshAlarms();
+      } catch (e) { addEvent('ack fallo: ' + e.message); }
+    }));
+  }
+
+  async function refreshAlarms() {
+    try { paintAlarms(await fetchJson('/api/alarms/active')); }
+    catch (e) { addEvent('alarms: ' + e.message); }
+  }
+
+  function addEvent(text) {
+    const ul = $('#eventsList');
+    const li = document.createElement('li');
+    li.textContent = new Date().toLocaleTimeString() + ' · ' + text;
+    ul.prepend(li);
+    while (ul.children.length > 30) ul.removeChild(ul.lastChild);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // SignalR real-time
+  let connection = null;
+  async function connectSignalR() {
+    if (typeof signalR === 'undefined') {
+      setLive('offline', 'signalr no cargado');
+      return;
+    }
+    connection = new signalR.HubConnectionBuilder()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('OnObservation', obs => {
+      setLive('online', 'recibiendo');
+      const key = obs.name || '(sin nombre)';
+      lastSignals[key] = { name: key, value: obs.value, unit: obs.unit };
+      paintSignals(Object.values(lastSignals));
+      addEvent(`Obs ${key} = ${obs.value ?? '—'}`);
+    });
+    connection.on('OnAlarm', alarm => {
+      addEvent(`ALARMA ${alarm.ruleName}: ${alarm.signalKey}=${alarm.value}`);
+      refreshAlarms();
+    });
+    connection.onreconnecting(() => setLive('degraded', 'reconectando'));
+    connection.onreconnected(() => setLive('online', 'conectado'));
+    connection.onclose(() => setLive('offline', 'desconectado'));
+
+    try {
+      await connection.start();
+      setLive('online', 'conectado');
+    } catch (e) {
+      setLive('offline', 'api no alcanzable');
+      addEvent('signalr: ' + e.message);
+      setTimeout(connectSignalR, 5000);
+    }
+  }
+  async function signalRJoin(endpointId) {
+    if (connection && connection.state === 'Connected') {
+      await connection.invoke('JoinAsset', endpointId);
+    }
+  }
+
+  // Eventos UI
+  $('#assetSelect').addEventListener('change', e => loadAsset(e.target.value));
+  $('#refreshBtn').addEventListener('click', () => { loadAssets(); paintAlarms([]); refreshAlarms(); });
+  $('#sandboxBtn').addEventListener('click', async () => {
+    if (!currentAsset) { addEvent('elige maquina primero'); return; }
+    try {
+      await fetchJson('/api/sandbox/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signalKey: 'temperatura',
+          value: 20 + Math.random() * 60,
+          unit: '°C'
+        })
+      });
+      addEvent('señal simulada publicada');
+    } catch (e) { addEvent('sandbox: ' + e.message); }
+  });
+
+  // Arranque
+  loadAssets();
+  refreshAlarms();
+  connectSignalR();
+})();
+</script>
+}

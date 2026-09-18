@@ -25,6 +25,23 @@ namespace AtlasGT.Discovery
 
     public sealed class TcpPortDiscovery : IEndpointDiscovery
     {
+        /// <summary>Prueba ligera: intenta abrir un socket TCP. No envia ni lee datos.</summary>
+        public async Task<bool> IsPortOpenAsync(string host, int port, int timeoutMs, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(host)) throw new ArgumentException("host requerido", nameof(host));
+            if (port <= 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port));
+            using var client = new TcpClient();
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(timeoutMs);
+            try
+            {
+                await client.ConnectAsync(host, port, cts.Token).ConfigureAwait(false);
+                return true;
+            }
+            catch (SocketException) { return false; }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return false; }
+        }
+
         public async Task<IReadOnlyList<Endpoint>> ScanTcpAsync(
             IPAddress address,
             IEnumerable<int> ports,

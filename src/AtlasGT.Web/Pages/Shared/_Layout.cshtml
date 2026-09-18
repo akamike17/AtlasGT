@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] — Atlas GT</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="top">
+        <div class="brand">
+            <strong>Atlas GT</strong>
+            <span class="tag">gateway &amp; traductor</span>
+        </div>
+        <nav class="role-nav">
+            <a href="/" class="role-op">Operador</a>
+            <a href="/Admin" class="role-admin">Admin</a>
+            <a href="/Lab" class="role-lab">Device Lab</a>
+        </nav>
+        <div id="live-indicator" class="live-indicator" data-state="offline">
+            <span class="dot"></span><span class="lbl">conectando…</span>
+        </div>
+    </header>
+    <main class="container">
+        @RenderBody()
+    </main>
+    <footer class="foot">
+        <span>Atlas GT · offline-first · passive-read-only por defecto</span>
+        <span id="build-marker"></span>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

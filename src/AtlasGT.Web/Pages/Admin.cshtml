@@ -1,0 +1,193 @@
+@page
+@model AdminModel
+@{
+    ViewData["Title"] = "Admin";
+}
+
+<section class="card">
+  <h2>Maquinas (Assets)</h2>
+  <form id="assetForm">
+    <div class="row">
+      <div class="field"><label>Nombre</label><input name="name" required /></div>
+      <div class="field"><label>Tag</label><input name="tag" /></div>
+      <div class="field"><label>Descripcion</label><input name="description" /></div>
+      <div class="field" style="align-self:end;"><button type="submit">Guardar</button></div>
+    </div>
+  </form>
+  <table id="assetsTable"><thead><tr><th>Tag</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section class="card">
+  <h2>Endpoints</h2>
+  <form id="endpointForm">
+    <div class="row">
+      <div class="field"><label>Nombre</label><input name="name" required /></div>
+      <div class="field"><label>Direccion</label><input name="address" placeholder="tcp://ip:502" required /></div>
+      <div class="field" style="align-self:end;"><button type="submit">Agregar</button></div>
+    </div>
+  </form>
+  <table id="endpointsTable"><thead><tr><th>Nombre</th><th>Direccion</th><th>Trust</th><th>Ultima obs.</th><th></th></tr></thead><tbody></tbody></table>
+</section>
+
+<section class="card">
+  <h2>Reglas de alarma</h2>
+  <form id="alarmForm">
+    <div class="row">
+      <div class="field"><label>Nombre</label><input name="name" required /></div>
+      <div class="field"><label>Señal</label><input name="signalKey" required /></div>
+      <div class="field"><label>Umbral</label><input name="threshold" type="number" step="any" required /></div>
+      <div class="field"><label>Comparacion</label>
+        <select name="comparison"><option>GreaterThan</option><option>LessThan</option><option>Equal</option><option>NotEqual</option></select>
+      </div>
+      <div class="field"><label>Severidad</label>
+        <select name="severity"><option>Info</option><option selected>Warning</option><option>Critical</option></select>
+      </div>
+      <div class="field" style="align-self:end;"><button type="submit">Guardar regla</button></div>
+    </div>
+  </form>
+  <table id="alarmsTable"><thead><tr><th>Nombre</th><th>Señal</th><th>></th><th>Severidad</th><th></th></tr></thead><tbody></tbody></table>
+</section>
+
+<section class="card">
+  <h2>Device Profiles</h2>
+  <form id="profileForm">
+    <div class="row">
+      <div class="field"><label>Fabricante</label><input name="manufacturer" required /></div>
+      <div class="field"><label>Modelo</label><input name="model" required /></div>
+      <div class="field"><label>Protocolo</label><input name="protocol" /></div>
+      <div class="field"><label>Notas</label><input name="notes" /></div>
+      <div class="field" style="align-self:end;"><button type="submit">Agregar</button></div>
+    </div>
+  </form>
+  <div class="row">
+    <button id="exportBtn" class="secondary">Exportar JSON</button>
+    <label class="secondary" style="padding:.4rem .8rem; border:1px solid #22303e; border-radius:6px; cursor:pointer;">
+      Importar JSON<input type="file" id="importInput" accept=".json" style="display:none;" />
+    </label>
+  </div>
+  <table id="profilesTable"><thead><tr><th>Fabricante</th><th>Modelo</th><th>Protocolo</th><th></th></tr></thead><tbody></tbody></table>
+</section>
+
+@section Scripts {
+<script>
+(function () {
+  const api = '@Model.ApiBaseUrl';
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  async function call(path, opts) {
+    const r = await fetch(api + path, opts);
+    if (!r.ok) throw new Error(await r.text());
+    return r.status === 204 ? null : r.json();
+  }
+
+  async function loadAssets() {
+    const rows = await call('/api/assets');
+    $('#assetsTable tbody').innerHTML = rows.map(a => `
+      <tr><td>${esc(a.tag)}</td><td>${esc(a.name)}</td>
+        <td><button class="danger" data-del-asset="${a.id}">Eliminar</button></td></tr>`).join('');
+    document.querySelectorAll('[data-del-asset]').forEach(b => b.onclick = async () => {
+      if (!confirm('Eliminar asset?')) return;
+      await call('/api/assets/' + b.dataset.delAsset, { method: 'DELETE' });
+      loadAssets();
+    });
+  }
+  async function loadEndpoints() {
+    const rows = await call('/api/endpoints');
+    $('#endpointsTable tbody').innerHTML = rows.map(e => `
+      <tr><td>${esc(e.name)}</td><td>${esc(e.address)}</td><td>${e.trustTier}</td><td>${e.lastObservedAtUtc || '—'}</td>
+        <td><button class="danger" data-del-ep="${e.id}">Eliminar</button></td></tr>`).join('');
+    document.querySelectorAll('[data-del-ep]').forEach(b => b.onclick = async () => {
+      await call('/api/endpoints/' + b.dataset.delEp, { method: 'DELETE' });
+      loadEndpoints();
+    });
+  }
+  async function loadAlarms() {
+    const rows = await call('/api/alarms/rules');
+    $('#alarmsTable tbody').innerHTML = rows.map(r => `
+      <tr><td>${esc(r.name)}</td><td>${esc(r.signalKey)}</td><td>${esc(r.comparison)} ${r.threshold}</td><td>${esc(r.severity)}</td>
+        <td><button class="danger" data-del-rule="${r.id}">Eliminar</button></td></tr>`).join('');
+    document.querySelectorAll('[data-del-rule]').forEach(b => b.onclick = async () => {
+      await call('/api/alarms/rules/' + b.dataset.delRule, { method: 'DELETE' });
+      loadAlarms();
+    });
+  }
+  async function loadProfiles() {
+    const rows = await call('/api/profiles');
+    $('#profilesTable tbody').innerHTML = rows.map(p => `
+      <tr><td>${esc(p.manufacturer)}</td><td>${esc(p.model)}</td><td>${esc(p.protocol || '—')}</td>
+        <td><button class="danger" data-del-p="${p.id}">Eliminar</button></td></tr>`).join('');
+    document.querySelectorAll('[data-del-p]').forEach(b => b.onclick = async () => {
+      await call('/api/profiles/' + b.dataset.delP, { method: 'DELETE' });
+      loadProfiles();
+    });
+  }
+
+  $('#assetForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    await call('/api/assets', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: f.get('name'), tag: f.get('tag'), description: f.get('description') })
+    });
+    e.target.reset(); loadAssets();
+  };
+  $('#endpointForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    await call('/api/endpoints', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: f.get('name'), address: f.get('address') })
+    });
+    e.target.reset(); loadEndpoints();
+  };
+  $('#alarmForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    await call('/api/alarms/rules', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: f.get('name'), signalKey: f.get('signalKey'),
+        threshold: parseFloat(f.get('threshold')),
+        comparison: f.get('comparison'), severity: f.get('severity')
+      })
+    });
+    e.target.reset(); loadAlarms();
+  };
+  $('#profileForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    await call('/api/profiles', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manufacturer: f.get('manufacturer'), model: f.get('model'), protocol: f.get('protocol'), notes: f.get('notes') })
+    });
+    e.target.reset(); loadProfiles();
+  };
+
+  $('#exportBtn').onclick = async () => {
+    const data = await call('/api/profiles/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'atlas-profiles.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
+  $('#importInput').onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const profiles = parsed.profiles || parsed;
+      await call('/api/profiles/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profiles)
+      });
+      loadProfiles();
+      alert('import ok');
+    } catch (err) { alert('import fallo: ' + err.message); }
+  };
+
+  loadAssets(); loadEndpoints(); loadAlarms(); loadProfiles();
+})();
+</script>
+}

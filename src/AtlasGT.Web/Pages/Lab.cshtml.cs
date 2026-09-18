@@ -3,12 +3,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace AtlasGT.Web.Pages
 {
-    public class IndexModel : PageModel
+    public class LabModel : PageModel
     {
         private readonly IConfiguration _cfg;
-        public IndexModel(IConfiguration cfg) => _cfg = cfg;
+        public LabModel(IConfiguration cfg) => _cfg = cfg;
         public string ApiBaseUrl => _cfg["AtlasGt:ApiBaseUrl"] ?? "http://localhost:5000";
-
         public void OnGet() { }
     }
 }

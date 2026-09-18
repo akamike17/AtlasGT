@@ -11,6 +11,7 @@
     <PackageReference Include="MSTest.TestAdapter" Version="3.2.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.2.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +25,8 @@
     <ProjectReference Include="..\..\src\AtlasGT.Security\AtlasGT.Security.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Discovery\AtlasGT.Discovery.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Connectors.Mqtt\AtlasGT.Connectors.Mqtt.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Infrastructure\AtlasGT.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Api\AtlasGT.Api.csproj" />
   </ItemGroup>
 
 </Project>

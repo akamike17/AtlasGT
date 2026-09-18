@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AtlasGT.Application\AtlasGT.Application.csproj" />
+    <ProjectReference Include="..\AtlasGT.Discovery\AtlasGT.Discovery.csproj" />
     <ProjectReference Include="..\AtlasGT.Domain\AtlasGT.Domain.csproj" />
+    <ProjectReference Include="..\AtlasGT.Infrastructure\AtlasGT.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
