@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AtlasGT.Connectors.Network\AtlasGT.Connectors.Network.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Connectors.Abstractions\AtlasGT.Connectors.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Connectors.Mqtt\AtlasGT.Connectors.Mqtt.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Domain\AtlasGT.Domain.csproj" />
   </ItemGroup>
 

@@ -18,7 +18,10 @@
     <ProjectReference Include="..\..\src\AtlasGT.Security\AtlasGT.Security.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Normalization\AtlasGT.Normalization.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Historian\AtlasGT.Historian.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Infrastructure\AtlasGT.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Connectors.Abstractions\AtlasGT.Connectors.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Application\AtlasGT.Application.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.ProtocolInference\AtlasGT.ProtocolInference.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,4 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AtlasGT.Connectors.Abstractions\AtlasGT.Connectors.Abstractions.csproj" />
+  </ItemGroup>
 </Project>
