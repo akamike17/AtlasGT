@@ -31,7 +31,20 @@ ok()   { PASS=$((PASS+1)); echo "[OK]   $*"; }
 bad()  { FAIL=$((FAIL+1)); echo "[FAIL] $*"; }
 
 say "Preparando API y Web en el mismo dataRoot: $DATA_DIR" 2>/dev/null || true
-REPO_NATIVE="C:/Users/Admin/source/repos/AtlasGT"
+
+# Calcular ROOT desde la ubicacion del script (no depende de la maquina)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Dotnet en Windows requiere rutas C:/... para los .dll
+if [[ "$REPO_ROOT" =~ ^/([a-zA-Z])/(.*)$ ]]; then
+  DRIVE=$(echo "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')
+  REST="${BASH_REMATCH[2]}"
+  REPO_NATIVE="${DRIVE}:/${REST}"
+else
+  REPO_NATIVE="$REPO_ROOT"
+fi
+echo "REPO_ROOT   : $REPO_ROOT"
+echo "REPO_NATIVE : $REPO_NATIVE"
 
 echo "== Build Release (por si acaso) =="
 dotnet build AtlasGT.sln -c Release --nologo -v q 2>&1 | tail -3 || { echo "build fail"; exit 1; }

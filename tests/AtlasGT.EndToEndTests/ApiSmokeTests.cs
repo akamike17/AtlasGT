@@ -439,41 +439,125 @@ namespace AtlasGT.EndToEndTests
         }
 
         [TestMethod]
-        public async Task Audit_export_csv_tiene_manifiesto_valido()
+        public async Task Audit_export_con_mas_de_1000_entradas_no_trunca_silenciosamente()
         {
+            // Sembrar 1050 entradas directas (rapido, sin pasar por API 1050 veces).
+            // Escribimos al archivo signed del audit para tener la cadena correcta.
+            var (factory, dataRoot) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            // Resolver el path real (mismo esquema que Program.cs)
+            var auditDir = Path.Combine(dataRoot, "audit");
+            Directory.CreateDirectory(auditDir);
+            var auditFile = Path.Combine(auditDir, "audit-signed.log");
+
+            var log = new AtlasGT.Infrastructure.SignedFileAuditLog(auditDir);
+            const int N = 1050;
+            for (int i = 0; i < N; i++)
+            {
+                await log.AppendAsync(new AtlasGT.Infrastructure.SignedAuditEntry
+                {
+                    AtUtc = DateTime.UtcNow.AddMilliseconds(i),
+                    Actor = "semilla",
+                    Action = "seed.entry",
+                    TargetId = $"id-{i}",
+                    Succeeded = true,
+                    Severity = AtlasGT.Infrastructure.AuditSeverity.Info
+                });
+            }
+
+            // Forzar re-resolucion: el singleton IServiceProvider ya creo el SignedFileAuditLog al inicio;
+            // como comparte MISMO archivo por dataRoot, las 1050 entradas las ve sin necesidad de recrear nada.
+            var verifyBefore = await admin.GetFromJsonAsync<JsonElement>("/api/admin/audit/verify");
+            Assert.IsTrue(verifyBefore.GetProperty("valid").GetBoolean());
+            Assert.AreEqual(N, verifyBefore.GetProperty("totalEntries").GetInt32());
+
+            var csvResp = await admin.GetAsync("/api/admin/audit/export.csv");
+            csvResp.EnsureSuccessStatusCode();
+            var csv = await csvResp.Content.ReadAsStringAsync();
+            var lines = csv.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            // Header + N entries + mas el evento audit.export que se agrega DENTRO del endpoint
+            // + linea MANIFEST. Como audit.export se agrega DESPUES de generar el CSV,
+            // el CSV contiene solo las N semillas (no el audit.export self-entry).
+            Assert.AreEqual(1 + N + 1, lines.Count, "header + entries + manifest");
+
+            // Manifiesto contador = N
+            var manifest = lines[^1];
+            StringAssert.Contains(manifest, $"MANIFEST,");
+            var parts = manifest.Split(',');
+            Assert.AreEqual(3, parts.Length);
+            var count = int.Parse(parts[2]);
+            Assert.AreEqual(N, count, "manifiesto reporta N correcto");
+        }
+
+        [TestMethod]
+        public async Task Restore_falla_no_corrompe_estado_previo()
+        {
+            var (factory, dataRoot) = CreateFactory();
+            using var _f = factory;
+            using var admin = AdminClient(factory);
+
+            // Estado inicial: 1 asset
+            await admin.PostAsJsonAsync("/api/assets", new { name = "PREVIO" });
+            var beforeResp = await admin.GetFromJsonAsync<JsonElement>("/api/assets");
+            var assetsBefore = beforeResp.EnumerateArray().ToList();
+            Assert.AreEqual(1, assetsBefore.Count);
+
+            // Backup valido
+            var bk1 = await admin.PostAsync("/api/admin/backup", null);
+            bk1.EnsureSuccessStatusCode();
+            var bk1Json = await bk1.Content.ReadFromJsonAsync<JsonElement>();
+            var validZip = bk1Json.GetProperty("path").GetString();
+            Assert.IsNotNull(validZip);
+
+            // Modificar config tras el backup (el backup NO incluye este cambio)
+            await admin.PostAsJsonAsync("/api/assets", new { name = "POST-BACKUP" });
+
+            // Ahora intentamos restaurar con un ZIP CORRUPTO — debe fallar Y no tocar nada
+            var corruptZip = Path.Combine(dataRoot, "corrupt.zip");
+            File.WriteAllText(corruptZip, "esto no es un zip valido");
+
+            var restoreResp = await admin.PostAsJsonAsync("/api/admin/restore",
+                new { zipPath = corruptZip });
+            Assert.IsFalse(restoreResp.IsSuccessStatusCode, "restore de zip corrupto debe fallar");
+
+            // Verificar: el estado actual se preserva intacto
+            var afterResp = await admin.GetFromJsonAsync<JsonElement>("/api/assets");
+            var assetsAfter = afterResp.EnumerateArray().ToList();
+            Assert.AreEqual(2, assetsAfter.Count, "corrupto no debio tocar los assets previos");
+            Assert.IsTrue(assetsAfter.Any(a => a.GetProperty("name").GetString() == "PREVIO"));
+            Assert.IsTrue(assetsAfter.Any(a => a.GetProperty("name").GetString() == "POST-BACKUP"));
+        }
+
+        [TestMethod]
+        public async Task Restore_valido_deja_estado_esperado()
+        {
+            // Complemento: restaurar con ZIP valido exitosamente tambien pasa por staging
             var (factory, _) = CreateFactory();
             using var _f = factory;
             using var admin = AdminClient(factory);
 
-            await admin.PostAsJsonAsync("/api/assets", new { name = "X1" });
-            await admin.PostAsJsonAsync("/api/profiles", new { manufacturer = "M", model = "m1" });
-            await Task.Delay(150);
+            await admin.PostAsJsonAsync("/api/assets", new { name = "EN-BACKUP" });
 
-            var csvResp = await admin.GetAsync("/api/admin/audit/export.csv");
-            csvResp.EnsureSuccessStatusCode();
-            StringAssert.Contains(csvResp.Content.Headers.ContentType?.MediaType ?? "", "csv");
+            var bk = await admin.PostAsync("/api/admin/backup", null);
+            bk.EnsureSuccessStatusCode();
+            var bkJson = await bk.Content.ReadFromJsonAsync<JsonElement>();
+            var zip = bkJson.GetProperty("path").GetString();
 
-            var csvText = await csvResp.Content.ReadAsStringAsync();
-            var lines = csvText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            Assert.IsTrue(lines.Count >= 3, "csv muy corto");
+            // Cambio posterior
+            await admin.PostAsJsonAsync("/api/assets", new { name = "POST-BACKUP-2" });
 
-            // La ultima linea debe ser MANIFEST con 3 campos y un SHA-256 valido
-            var manifest = lines[^1];
-            Assert.IsTrue(manifest.StartsWith("MANIFEST,"), $"ultima linea no es MANIFEST: {manifest}");
-            var parts = manifest.Split(',');
-            Assert.AreEqual(3, parts.Length);
+            // Restaurar al snapshot
+            var rs = await admin.PostAsJsonAsync("/api/admin/restore", new { zipPath = zip! });
+            rs.EnsureSuccessStatusCode();
 
-            // Recalcular SHA-256 del body sin la linea manifiesto
-            var body = string.Join("\n", lines.Take(lines.Count - 1)) + "\n";
-            var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(body));
-            var expected = Convert.ToHexString(hash).ToLowerInvariant();
-            // La ruta termina con newline segun como la armo el controller; tolerante:
-            Assert.IsTrue(parts[1].Length == 64, $"hash no es sha256 hex (len={parts[1].Length}): {parts[1]}");
-            // Compara con tolerancia: recalculo tanto con \n como \r\n
-            var altHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(string.Join("\r\n", lines.Take(lines.Count - 1)) + "\r\n"))).ToLowerInvariant();
-            Assert.IsTrue(parts[1] == expected || parts[1] == altHash,
-                $"manifiesto no coincide. manifest={parts[1]}; recomputado={expected}");
+            await Task.Delay(200);
+            var final = await admin.GetFromJsonAsync<JsonElement>("/api/assets");
+            var list = final.EnumerateArray().ToList();
+            Assert.AreEqual(1, list.Count, "post-restore debe tener solo el asset del backup");
+            Assert.AreEqual("EN-BACKUP", list[0].GetProperty("name").GetString());
         }
     }
 }

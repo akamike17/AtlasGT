@@ -68,8 +68,10 @@ namespace AtlasGT.Api.Controllers
         [HttpGet("audit/export.csv")]
         public async Task<IActionResult> ExportAuditCsv(CancellationToken ct)
         {
-            var entries = await _audit.ReadAsync(limit: 10000, ct: ct);
-            // Orden cronologico (no mas-recientes-primero) para que el CSV sea replay-able
+            // ReadAllAsync: sin cap de 1000. El audit log entra en memoria; eso
+            // es intencional — export debe reflejar TODO el log, no una vista
+            // truncada silenciosamente.
+            var entries = await _audit.ReadAllAsync(ct: ct);
             var chrono = entries.OrderBy(e => e.AtUtc).ToList();
 
             var sb = new System.Text.StringBuilder();

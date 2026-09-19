@@ -34,6 +34,18 @@ namespace AtlasGT.Infrastructure
             AuditSeverity? severity = null,
             int limit = 100,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// Lectura sin limite para exports/forense. Puede ser costoso en memoria
+        /// si el log es enorme; preferible a truncar silenciosamente.
+        /// </summary>
+        Task<IReadOnlyList<SignedAuditEntry>> ReadAllAsync(
+            DateTimeOffset? fromUtc = null,
+            DateTimeOffset? toUtc = null,
+            string? actor = null,
+            string? action = null,
+            AuditSeverity? severity = null,
+            CancellationToken ct = default);
     }
 
     public sealed class AuditChainVerification
@@ -174,6 +186,38 @@ namespace AtlasGT.Infrastructure
                 .OrderByDescending(e => e.AtUtc)
                 .Take(Math.Clamp(limit, 1, 1000))
                 .ToList();
+        }
+
+        public async Task<IReadOnlyList<SignedAuditEntry>> ReadAllAsync(
+            DateTimeOffset? fromUtc = null,
+            DateTimeOffset? toUtc = null,
+            string? actor = null,
+            string? action = null,
+            AuditSeverity? severity = null,
+            CancellationToken ct = default)
+        {
+            var results = new List<SignedAuditEntry>();
+            if (!File.Exists(_file)) return results;
+
+            await foreach (var (line, _) in ReadLinesAsync(ct).ConfigureAwait(false))
+            {
+                SignedAuditEntry? entry;
+                try { entry = JsonSerializer.Deserialize<SignedAuditEntry>(line, Json); }
+                catch (JsonException) { continue; }
+                if (entry is null) continue;
+
+                if (fromUtc.HasValue && entry.AtUtc < fromUtc.Value) continue;
+                if (toUtc.HasValue && entry.AtUtc > toUtc.Value) continue;
+                if (!string.IsNullOrWhiteSpace(actor) &&
+                    !entry.Actor.Contains(actor, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!string.IsNullOrWhiteSpace(action) &&
+                    !string.Equals(entry.Action, action, StringComparison.OrdinalIgnoreCase)) continue;
+                if (severity.HasValue && entry.Severity != severity.Value) continue;
+
+                results.Add(entry);
+            }
+            // Cronologico inverso, SIN cap. Usuario asume el costo de memoria.
+            return results.OrderByDescending(e => e.AtUtc).ToList();
         }
 
         private async Task<string?> ReadLastHashInternalAsync(CancellationToken ct)

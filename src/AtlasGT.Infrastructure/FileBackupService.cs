@@ -61,18 +61,78 @@ namespace AtlasGT.Infrastructure
         public async Task<bool> RestoreAsync(string zipPath, string? destinationDir = null, CancellationToken ct = default)
         {
             if (!File.Exists(zipPath)) return false;
-            var dest = destinationDir ?? _sourceDir;
-            Directory.CreateDirectory(dest);
+            var dest = Path.GetFullPath(destinationDir ?? _sourceDir);
+
+            // Transaccionalidad:
+            //   1. Extraer ZIP en staging TEMP dentro del MISMO volumen (sibling) — operable pero aislado.
+            //   2. Validar que el staging existe y tiene contenido.
+            //   3. Mover el directorio dest actual a una posicion "rollback" (rename atomico en mismo volumen).
+            //   4. Mover staging → dest (rename atomico en mismo volumen).
+            //   5. Si el paso 4 falla, restaurar desde rollback.
+            //   6. Borrar rollback al final si todo salio bien.
+            //
+            // Nota: File.Move en mismo volumen es atomico en NTFS. No es 100% transaccional
+            // si el proceso muere entre pasos, pero 4-5 ocupan <1ms y el rollback siempre existe
+            // hasta que se confirma el swap.
+            var parent = Path.GetDirectoryName(dest) ?? throw new InvalidOperationException("dest sin padre");
+            var staging = Path.Combine(parent, $".restore-staging-{Guid.NewGuid():N}");
+            var rollback = Path.Combine(parent, $".restore-rollback-{Guid.NewGuid():N}");
+
             try
             {
+                // 1. extract
                 await Task.Run(() =>
                 {
-                    System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, dest, overwriteFiles: true);
+                    System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, staging);
                 }, ct).ConfigureAwait(false);
+
+                // 2. validate staging tiene contenido
+                if (!Directory.Exists(staging)) return false;
+                var stagedFiles = Directory.GetFiles(staging, "*", SearchOption.AllDirectories);
+                if (stagedFiles.Length == 0)
+                {
+                    try { Directory.Delete(staging, true); } catch { }
+                    return false;
+                }
+
+                // 3-4. swap
+                bool destExisted = Directory.Exists(dest);
+                bool rollbackMoved = false;
+                try
+                {
+                    if (destExisted)
+                    {
+                        Directory.Move(dest, rollback);
+                        rollbackMoved = true;
+                    }
+                    Directory.Move(staging, dest);
+                }
+                catch
+                {
+                    // 5. rollback si fallo el swap
+                    if (rollbackMoved && Directory.Exists(rollback) && !Directory.Exists(dest))
+                    {
+                        try { Directory.Move(rollback, dest); } catch { }
+                    }
+                    throw;
+                }
+
+                // 6. limpiar rollback si el swap quedo
+                try
+                {
+                    if (Directory.Exists(rollback)) Directory.Delete(rollback, true);
+                }
+                catch { /* mejor esfuerzo */ }
                 return true;
             }
-            catch (InvalidDataException) { return false; }
-            catch (IOException) { return false; }
+            catch (InvalidDataException) { Cleanup(staging); return false; }
+            catch (IOException) { Cleanup(staging); Cleanup(rollback); return false; }
+            catch (UnauthorizedAccessException) { Cleanup(staging); Cleanup(rollback); return false; }
+        }
+
+        private static void Cleanup(string dir)
+        {
+            try { if (Directory.Exists(dir)) Directory.Delete(dir, true); } catch { }
         }
 
         public Task<IReadOnlyList<string>> ListBackupsAsync(string? destinationDir = null, CancellationToken ct = default)
