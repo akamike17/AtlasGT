@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using AtlasGT.Domain.Entities;
+
 namespace AtlasGT.Application.Interfaces
 {
     public interface IDeviceConfigurationService

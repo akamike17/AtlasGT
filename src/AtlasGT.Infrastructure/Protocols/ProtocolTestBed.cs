@@ -7,7 +7,6 @@ namespace AtlasGT.Infrastructure.Protocols
 {
     public class ProtocolTestBed
     {
-        private readonly ProtocolDecoder _decoder;
         private readonly ProtocolSchemaValidator _validator;
         private readonly ILogger<ProtocolTestBed> _logger;
 

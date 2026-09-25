@@ -12,7 +12,7 @@ namespace AtlasGT.Infrastructure.Protocols
                 throw new ArgumentOutOfRangeException(nameof(data), "Payload too short for field definition.");
 
             var slice = data.Slice(field.Offset, field.Length);
-            
+
             return field.Type switch
             {
                 EncodingType.Int32 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadInt32BigEndian(slice) : BinaryPrimitives.ReadInt32LittleEndian(slice),
@@ -21,8 +21,16 @@ namespace AtlasGT.Infrastructure.Protocols
                 EncodingType.Float64 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadDoubleBigEndian(slice) : BinaryPrimitives.ReadDoubleLittleEndian(slice),
                 EncodingType.Boolean => slice[0] != 0,
                 EncodingType.StringAscii => Encoding.ASCII.GetString(slice),
+                EncodingType.BitField => DecodeBitField(slice),
                 _ => throw new NotSupportedException($"Encoding {field.Type} is not supported yet.")
             };
+        }
+
+        private static bool DecodeBitField(ReadOnlySpan<byte> slice)
+        {
+            // Simplified BitField: returns true if the first bit of the first byte is set
+            // In a real implementation, we would use the field definition for the specific bit offset
+            return (slice[0] & 0x01) != 0;
         }
     }
 }

@@ -11,11 +11,13 @@
     <PackageReference Include="MSTest.TestAdapter" Version="3.2.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.2.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AtlasGT.Discovery\AtlasGT.Discovery.csproj" />
     <ProjectReference Include="..\..\src\AtlasGT.Connectors.Simulators\AtlasGT.Connectors.Simulators.csproj" />
+    <ProjectReference Include="..\..\src\AtlasGT.Infrastructure\AtlasGT.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

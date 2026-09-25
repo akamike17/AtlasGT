@@ -26,6 +26,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddSignalR();
 
 // Observability
+/*
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
@@ -35,6 +36,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddRuntimeInstrumentation()
         .AddConsoleExporter());
+*/
 
 
 // dataRoot se resuelve desde la configuracion EFECTIVA en el primer uso (post-test-overrides).

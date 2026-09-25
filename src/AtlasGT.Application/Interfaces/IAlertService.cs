@@ -1,3 +1,7 @@
+using AtlasGT.Domain.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
 namespace AtlasGT.Application.Interfaces
 {
     public interface IAlertService

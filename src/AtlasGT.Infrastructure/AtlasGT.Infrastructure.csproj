@@ -8,6 +8,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AtlasGT.Domain\AtlasGT.Domain.csproj" />
+    <ProjectReference Include="..\AtlasGT.Connectors.Abstractions\AtlasGT.Connectors.Abstractions.csproj" />
+    <ProjectReference Include="..\AtlasGT.Application\AtlasGT.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

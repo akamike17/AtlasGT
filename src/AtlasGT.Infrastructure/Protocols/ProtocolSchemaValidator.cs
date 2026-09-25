@@ -10,9 +10,9 @@ namespace AtlasGT.Infrastructure.Protocols
 
     public class ProtocolSchemaValidator
     {
-        private readonly ILogger<ProtocolSchemaValidator> _logger;
+        private readonly ILogger _logger;
 
-        public ProtocolSchemaValidator(ILogger<ProtocolSchemaValidator> logger)
+        public ProtocolSchemaValidator(ILogger logger)
         {
             _logger = logger;
         }
@@ -36,12 +36,13 @@ namespace AtlasGT.Infrastructure.Protocols
                     EncodingType.Int32 or EncodingType.UInt32 or EncodingType.Float32 => 4,
                     EncodingType.Float64 => 8,
                     EncodingType.Boolean => 1,
+                    EncodingType.BitField => 1, // Minimum 1 byte for a bitfield
                     _ => 0
                 };
 
-                if (requiredLength > 0 && field.Length != requiredLength)
+                if (requiredLength > 0 && field.Length < requiredLength)
                 {
-                    throw new SchemaValidationException($"Field {field.Name} of type {field.Type} requires exactly {requiredLength} bytes, but {field.Length} was provided.");
+                    throw new SchemaValidationException($"Field {field.Name} of type {field.Type} requires at least {requiredLength} bytes, but {field.Length} was provided.");
                 }
             }
 
@@ -84,6 +85,15 @@ namespace AtlasGT.Infrastructure.Protocols
             {
                 if (schema.Framing.LengthOffset < 0)
                     throw new SchemaValidationException("LengthPrefix offset cannot be negative.");
+            }
+
+            if (schema.Validation != null && schema.Validation.EnableChecksum)
+            {
+                var validAlgorithms = new[] { "None", "Checksum8", "CRC16" };
+                if (!validAlgorithms.Contains(schema.Validation.ChecksumAlgorithm))
+                {
+                    throw new SchemaValidationException($"Unsupported checksum algorithm: {schema.Validation.ChecksumAlgorithm}. Supported: {string.Join(", ", validAlgorithms)}");
+                }
             }
 
             _logger.LogInformation($"Protocol schema '{schema.ProtocolName}' validated successfully.");

@@ -110,7 +110,7 @@ namespace AtlasGT.UnitTests.Protocols
             if (await samples.MoveNextAsync())
             {
                 var sample = samples.Current;
-                var decodedVal = ProtocolDecoder.Decode(sample.Payload, schema.Fields[0]);
+                var decodedVal = ProtocolDecoder.Decode(sample.Payload.Span, schema.Fields[0]);
                 Assert.AreEqual(1, (int)decodedVal, "Golden vector failed: expected 1.");
             }
             else

@@ -15,9 +15,13 @@ namespace AtlasGT.Infrastructure.Connectors
         private readonly ScriptedProtocol _script;
         private readonly ILogger<ScriptedProtocolConnector> _logger;
         private readonly ScriptedTransport _transport;
+        private readonly FrameProcessor _frameProcessor;
+        private readonly IntegrityChecker _integrityChecker;
+        private readonly ResponseMatcher _matcher;
         private ConnectorState _state = ConnectorState.Disconnected;
 
         public string EndpointAddress => _address;
+
         public string TransportKind => _script.Transport.ToString().ToLower();
         public ConnectorState State => _state;
 
@@ -27,6 +31,9 @@ namespace AtlasGT.Infrastructure.Connectors
             _script = script;
             _logger = logger;
             _transport = transport;
+            _frameProcessor = new FrameProcessor();
+            _integrityChecker = new IntegrityChecker();
+            _matcher = new ResponseMatcher();
         }
 
         public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
@@ -47,27 +54,45 @@ namespace AtlasGT.Infrastructure.Connectors
                     {
                         if (step.RequestPayload != null)
                         {
-                            // Use the deterministic transport
-                            finalPayload = _transport.SendAndReceive(step.RequestPayload);
+                            // 1. Transport: Send and receive raw bytes
+                            byte[] rawBytes = _transport.SendAndReceive(step.RequestPayload);
+
+                            // 2. Framing: Extract the frame
+                            byte[] framedBytes = _frameProcessor.ExtractFrame(rawBytes, _script.ResponseSchema.Framing);
+
+                            // 3. Integrity: Validate Checksum/CRC
+                            _integrityChecker.Validate(framedBytes, _script.ResponseSchema.Validation);
+
+                            // 4. Matcher: Verify response pattern (if any)
+                            // In a real scenario, the step might define the pattern
+                            _matcher.Match(framedBytes, null); 
+
+                            finalPayload = framedBytes;
                         }
                     }
 
                     if (finalPayload != null)
                     {
-                        yield return new RawSample
-                        {
-                            EndpointAddress = _address,
-                            ReceivedAtUtc = DateTimeOffset.UtcNow,
-                            Payload = finalPayload,
-                            TransportKind = TransportKind
-                        };
+                        // Capture sample inside try, but return it outside if necessary.
+                        // However, in an async enumerable, we can just move the yield out of the try.
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Protocol failure: {ex.Message}");
+                    _logger.LogError($"Pipeline failure: {ex.Message}");
                     _state = ConnectorState.Faulted;
                     yield break;
+                }
+
+                if (finalPayload != null)
+                {
+                    yield return new RawSample
+                    {
+                        EndpointAddress = _address,
+                        ReceivedAtUtc = DateTimeOffset.UtcNow,
+                        Payload = finalPayload,
+                        TransportKind = TransportKind
+                    };
                 }
 
                 await Task.Delay(1000, cancellationToken);
