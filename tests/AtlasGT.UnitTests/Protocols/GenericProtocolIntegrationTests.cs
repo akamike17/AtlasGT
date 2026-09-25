@@ -48,7 +48,7 @@ namespace AtlasGT.UnitTests.Protocols
                 }
             };
 
-            var connector = new GenericProtocolConnector("127.0.0.1", schema, new NullLogger<GenericProtocolConnector>(), transport);
+            var connector = new GenericProtocolConnector("127.0.0.1", schema, new NullLogger<GenericProtocolConnector>(), transport, new CommandSafetyService());
             await connector.ConnectAsync();
 
             // 4. Execute: Send Request
@@ -90,7 +90,7 @@ namespace AtlasGT.UnitTests.Protocols
                 Fields = new List<FieldDefinition> { new() { Name = "V", Offset = 0, Length = 1, Type = EncodingType.Boolean } }
             };
 
-            var connector = new GenericProtocolConnector("127.0.0.1", schema, new NullLogger<GenericProtocolConnector>(), transport);
+            var connector = new GenericProtocolConnector("127.0.0.1", schema, new NullLogger<GenericProtocolConnector>(), transport, new CommandSafetyService());
             await connector.ConnectAsync();
 
             var samples = connector.ReadAllAsync().GetAsyncEnumerator();
