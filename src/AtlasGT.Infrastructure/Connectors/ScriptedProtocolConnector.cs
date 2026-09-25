@@ -1,6 +1,7 @@
 using AtlasGT.Connectors.Abstractions;
 using AtlasGT.Domain.Protocols;
 using AtlasGT.Infrastructure.Protocols;
+using AtlasGT.Infrastructure.Protocols.Testing;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading;
@@ -13,24 +14,23 @@ namespace AtlasGT.Infrastructure.Connectors
         private readonly string _address;
         private readonly ScriptedProtocol _script;
         private readonly ILogger<ScriptedProtocolConnector> _logger;
+        private readonly ScriptedTransport _transport;
         private ConnectorState _state = ConnectorState.Disconnected;
 
         public string EndpointAddress => _address;
         public string TransportKind => _script.Transport.ToString().ToLower();
         public ConnectorState State => _state;
 
-        public ScriptedProtocolConnector(string address, ScriptedProtocol script, ILogger<ScriptedProtocolConnector> logger)
+        public ScriptedProtocolConnector(string address, ScriptedProtocol script, ILogger<ScriptedProtocolConnector> logger, ScriptedTransport transport)
         {
             _address = address;
             _script = script;
             _logger = logger;
+            _transport = transport;
         }
 
         public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
         {
-            _state = ConnectorState.Connecting;
-            // In a real implementation, this opens the socket based on _script.Transport
-            await Task.Delay(50, cancellationToken);
             _state = ConnectorState.Connected;
             return true;
         }
@@ -43,30 +43,17 @@ namespace AtlasGT.Infrastructure.Connectors
 
                 try
                 {
-                    // PIPELINE: Transport -> Request/Response Cycle
                     foreach (var step in _script.Steps)
                     {
-                        _logger.LogDebug($"Executing step: {step.StepName}");
-                        
-                        // 1. Transport: Send Request
                         if (step.RequestPayload != null)
                         {
-                            await SendBytesAsync(step.RequestPayload, cancellationToken);
-                        }
-
-                        // 2. Framing & Integrity: Read response
-                        if (step.BlockUntilResponse)
-                        {
-                            var response = await ReceiveBytesAsync(step.ExpectedResponseLength, step.TimeoutMs, cancellationToken);
-                            
-                            // If this is the last step, this is our primary payload
-                            finalPayload = response;
+                            // Use the deterministic transport
+                            finalPayload = _transport.SendAndReceive(step.RequestPayload);
                         }
                     }
 
                     if (finalPayload != null)
                     {
-                        // 3. Matcher & Decoder: The sample is produced
                         yield return new RawSample
                         {
                             EndpointAddress = _address,
@@ -78,26 +65,13 @@ namespace AtlasGT.Infrastructure.Connectors
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Pipeline error in scripted transport: {ex.Message}");
+                    _logger.LogError($"Protocol failure: {ex.Message}");
                     _state = ConnectorState.Faulted;
                     yield break;
                 }
 
                 await Task.Delay(1000, cancellationToken);
             }
-        }
-
-        private async Task SendBytesAsync(byte[] data, CancellationToken ct)
-        {
-            // Simulating physical write
-            await Task.CompletedTask;
-        }
-
-        private async Task<byte[]> ReceiveBytesAsync(int length, int timeout, CancellationToken ct)
-        {
-            // Simulating physical read with timeout
-            await Task.Delay(10, ct);
-            return new byte[length];
         }
 
         public async Task DisconnectAsync(CancellationToken cancellationToken = default)

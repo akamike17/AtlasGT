@@ -19,6 +19,9 @@ namespace AtlasGT.Infrastructure.Protocols
 
         public void Validate(ProtocolSchema schema)
         {
+            if (schema == null)
+                throw new SchemaValidationException("Schema cannot be null.");
+
             if (string.IsNullOrWhiteSpace(schema.ProtocolName))
                 throw new SchemaValidationException("Protocol name cannot be empty.");
 
@@ -63,6 +66,9 @@ namespace AtlasGT.Infrastructure.Protocols
             }
 
             // 3. Framing Validation
+            if (schema.Framing == null)
+                throw new SchemaValidationException("Framing configuration is missing.");
+
             if (schema.Framing.Type == FramingType.FixedLength)
             {
                 if (schema.Framing.FixedLength <= 0)

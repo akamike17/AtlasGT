@@ -13,19 +13,12 @@ namespace AtlasGT.Infrastructure.Protocols
 
             var slice = data.Slice(field.Offset, field.Length);
             
-            // Handle Endianness by reversing if necessary
-            if (field.Endianness == Endianness.Little)
-            {
-                // Note: In a real scenario, we would use BinaryPrimitives.Read...LittleEndian
-                // For simplicity in this implementation, we ensure the slice is handled correctly.
-            }
-
             return field.Type switch
             {
-                EncodingType.Int32 => BinaryPrimitives.ReadInt32BigEndian(slice),
-                EncodingType.UInt32 => BinaryPrimitives.ReadUInt32BigEndian(slice),
-                EncodingType.Float32 => BinaryPrimitives.ReadSingleBigEndian(slice),
-                EncodingType.Float64 => BinaryPrimitives.ReadDoubleBigEndian(slice),
+                EncodingType.Int32 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadInt32BigEndian(slice) : BinaryPrimitives.ReadInt32LittleEndian(slice),
+                EncodingType.UInt32 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadUInt32BigEndian(slice) : BinaryPrimitives.ReadUInt32LittleEndian(slice),
+                EncodingType.Float32 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadSingleBigEndian(slice) : BinaryPrimitives.ReadSingleLittleEndian(slice),
+                EncodingType.Float64 => field.Endianness == Endianness.Big ? BinaryPrimitives.ReadDoubleBigEndian(slice) : BinaryPrimitives.ReadDoubleLittleEndian(slice),
                 EncodingType.Boolean => slice[0] != 0,
                 EncodingType.StringAscii => Encoding.ASCII.GetString(slice),
                 _ => throw new NotSupportedException($"Encoding {field.Type} is not supported yet.")
