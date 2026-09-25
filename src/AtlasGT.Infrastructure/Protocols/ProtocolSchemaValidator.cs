@@ -25,7 +25,24 @@ namespace AtlasGT.Infrastructure.Protocols
             if (schema.Fields == null || schema.Fields.Count == 0)
                 throw new SchemaValidationException("Protocol must define at least one field.");
 
-            // Check for overlapping fields and invalid offsets
+            // 1. Type-Length Consistency Check
+            foreach (var field in schema.Fields)
+            {
+                int requiredLength = field.Type switch
+                {
+                    EncodingType.Int32 or EncodingType.UInt32 or EncodingType.Float32 => 4,
+                    EncodingType.Float64 => 8,
+                    EncodingType.Boolean => 1,
+                    _ => 0
+                };
+
+                if (requiredLength > 0 && field.Length != requiredLength)
+                {
+                    throw new SchemaValidationException($"Field {field.Name} of type {field.Type} requires exactly {requiredLength} bytes, but {field.Length} was provided.");
+                }
+            }
+
+            // 2. Check for overlapping fields and invalid offsets
             var sortedFields = schema.Fields.OrderBy(f => f.Offset).ToList();
             int currentPosition = 0;
 
@@ -45,13 +62,22 @@ namespace AtlasGT.Infrastructure.Protocols
                 currentPosition = field.Offset + field.Length;
             }
 
-            // Validate Framing vs Fields
-            if (schema.Framing.Type == FramingType.FixedLength && schema.Framing.FixedLength > 0)
+            // 3. Framing Validation
+            if (schema.Framing.Type == FramingType.FixedLength)
             {
+                if (schema.Framing.FixedLength <= 0)
+                    throw new SchemaValidationException("FixedLength framing requires a positive length.");
+                
                 if (currentPosition > schema.Framing.FixedLength)
                 {
                     throw new SchemaValidationException($"Fields extend beyond the fixed frame length of {schema.Framing.FixedLength} bytes.");
                 }
+            }
+
+            if (schema.Framing.Type == FramingType.LengthPrefix)
+            {
+                if (schema.Framing.LengthOffset < 0)
+                    throw new SchemaValidationException("LengthPrefix offset cannot be negative.");
             }
 
             _logger.LogInformation($"Protocol schema '{schema.ProtocolName}' validated successfully.");
