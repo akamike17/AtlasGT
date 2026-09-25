@@ -23,7 +23,11 @@ namespace AtlasGT.Infrastructure.Protocols
                 
                 if (schema == null) throw new Exception("Deserialization resulted in null.");
                 
-                _logger.LogInformation($"Successfully loaded protocol schema: {schema.ProtocolName}");
+                // Validation Step
+                var validator = new ProtocolSchemaValidator(_logger);
+                validator.Validate(schema);
+                
+                _logger.LogInformation($"Successfully loaded and validated protocol schema: {schema.ProtocolName}");
                 return schema;
             }
             catch (Exception ex)
