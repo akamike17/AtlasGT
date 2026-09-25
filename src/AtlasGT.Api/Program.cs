@@ -14,7 +14,28 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
+    { 
+        Title = "AtlasGT Industrial API", 
+        Version = "v1", 
+        Description = "Advanced Industrial IoT Gateway for Data Acquisition and Historization" 
+    });
+});
 builder.Services.AddSignalR();
+
+// Observability
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddConsoleExporter())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddConsoleExporter());
+
 
 // dataRoot se resuelve desde la configuracion EFECTIVA en el primer uso (post-test-overrides).
 static string ResolveDataRoot(IConfiguration cfg) =>
