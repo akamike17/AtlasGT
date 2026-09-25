@@ -65,17 +65,36 @@ namespace AtlasGT.UnitTests.Protocols
         [TestMethod]
         public async Task ExecuteAsync_WrongRequest_Fails()
         {
+            // Arrange
             await _connector.ConnectAsync();
-            var op = new ProtocolOperation { RequestBytes = new byte[] { 0x01 }, OperationName = "BadReq" };
             
-            // Transport expects 0x01 0x02 but receives 0x01
-            // Note: Our ScriptedProtocolTransport needs to be updated to verify requests if we want this test to pass
-            // For now, we simulate a transport failure
-            _transport.ForceDisconnectOnNextReceive();
-            _transport.AddResponse(new byte[] { 0x00 });
+            // Configure transport to expect {0x01, 0x02}
+            _transport.SetExpectedRequest(new byte[] { 0x01, 0x02 });
+            
+            // Operation sends {0x01}
+            var op = new ProtocolOperation 
+            { 
+                RequestBytes = new byte[] { 0x01 }, 
+                OperationName = "BadReq" 
+            };
+            
+            // Add a response so that IF it got past SendAsync, it would have something to read
+            _transport.AddResponse(new byte[] { 0x00, 0x00, 0x00, 0x01, 0x00 });
 
+            // Act
             var result = await _connector.ExecuteAsync(op);
-            Assert.IsFalse(result.Success);
+
+            // Assert
+            Assert.IsFalse(result.Success, "Operation should have failed due to request mismatch.");
+            Assert.IsTrue(result.Error != null && result.Error.Contains("Transport request mismatch"), $"Expected transport mismatch error, but got: {result.Error}");
+            
+            // Prove no response was decoded (Fields should be empty)
+            Assert.AreEqual(0, result.Fields.Count, "No response should have been decoded on request failure.");
+            
+            // Prove the exact request bytes captured by the transport are {0x01}
+            // Note: Our transport only adds to _sentData if the request matches. 
+            // If it fails, it's not added. This is a design choice. 
+            // However, the error message contains the received bytes.
         }
 
         [TestMethod]

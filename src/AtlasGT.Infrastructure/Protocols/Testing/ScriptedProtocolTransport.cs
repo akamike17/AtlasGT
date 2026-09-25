@@ -18,6 +18,7 @@ namespace AtlasGT.Infrastructure.Protocols.Testing
         private bool _isConnected;
         private bool _shouldFailNextReceive;
         private int _receiveDelayMs = 0;
+        private byte[]? _expectedRequest;
 
         public bool IsConnected => _isConnected;
 
@@ -25,6 +26,8 @@ namespace AtlasGT.Infrastructure.Protocols.Testing
         {
             _responseQueue.Enqueue(new ScriptedResponse { Data = data, DelayMs = delayMs });
         }
+
+        public void SetExpectedRequest(byte[] request) => _expectedRequest = request;
 
         public void ForceDisconnectOnNextReceive() => _shouldFailNextReceive = true;
         public void SetReceiveDelay(int ms) => _receiveDelayMs = ms;
@@ -44,8 +47,15 @@ namespace AtlasGT.Infrastructure.Protocols.Testing
         public Task SendAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
             if (!_isConnected) throw new InvalidOperationException("Transport is not connected.");
+
+            byte[] sent = data.ToArray();
             
-            _sentData.Add(data.ToArray());
+            if (_expectedRequest != null && !sent.SequenceEqual(_expectedRequest))
+            {
+                throw new System.IO.IOException($"Transport request mismatch. Expected {BitConverter.ToString(_expectedRequest)}, received {BitConverter.ToString(sent)}");
+            }
+
+            _sentData.Add(sent);
             return Task.CompletedTask;
         }
 
@@ -67,7 +77,7 @@ namespace AtlasGT.Infrastructure.Protocols.Testing
             }
 
             var response = _responseQueue.Dequeue();
-            
+
             if (response.Data.Length > maxLength)
             {
                 return response.Data.Take(maxLength).ToArray();
